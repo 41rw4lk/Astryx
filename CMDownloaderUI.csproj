@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<LangVersion>latest</LangVersion>
+		<ApplicationIcon>wwwroot\Astryx.ico</ApplicationIcon>
+		<AssemblyName>Astryx</AssemblyName>
+		<RootNamespace>Astryx</RootNamespace>
+	</PropertyGroup>
+
+	<!-- Prevent accidental compilation of temp C# files -->
+	<ItemGroup>
+		<Compile Remove="*.tmp.cs;tmp*.cs" />
+		<None Include="*.tmp.cs;tmp*.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Krypton.Toolkit" Version="95.25.8.235" />
+		<PackageReference Include="MaterialSkin2DotNet" Version="1.1.2" />
+		<PackageReference Include="Microsoft.Playwright" Version="1.55.0" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <Compile Update="Properties\Resources.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resources.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<Content Include="wwwroot\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Remove="MainForm.resx" />
+	</ItemGroup>
+
+</Project>

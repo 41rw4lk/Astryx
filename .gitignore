@@ -1,0 +1,28 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Your local configs / state
+ui.ini
+easylist.txt
+filters.txt
+
+# Playwright browsers cache
+pw-browsers/
+
+# Logs / update artifacts
+*.log
+runlog*.txt
+vsout*.txt
+*_error.txt
+*_applied.txt
+_UPDATE_MODE_ENTERED.txt
+_wuh_update_spawn.txt
+
+# Notepad++ backups
+nppBackup/

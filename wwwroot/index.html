@@ -1,0 +1,2851 @@
+<!-- AF-WEBUI-VERSION: 2025-12-30-01 (ver0.3.1) -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Astryx☆ Webui</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+	:root{
+	  --bg:#0b0c0e; --bg-deep:#07080a; --ink:#dfe7f2; --muted:#93a0b2;
+	  --amber:#ffb400; --cyan:#58e1ff; --edge:#14181f;
+	}
+	*{box-sizing:border-box}
+	html,body{height:100%;margin:0;color:var(--ink);
+	  font-family:Orbitron,ui-sans-serif,system-ui;letter-spacing:.25px;
+	  background:
+		radial-gradient(1200px 800px at 50% 0%,rgba(255,255,255,.03),transparent 60%),
+		radial-gradient(1200px 1200px at 50% 120%,rgba(88,225,255,.06),transparent 50%),
+		radial-gradient(1200px 900px at 50% -40%,rgba(255,180,0,.05),transparent 55%),
+		linear-gradient(180deg,var(--bg),var(--bg-deep));}
+	body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;
+	  background:
+		radial-gradient(circle at 50% 0,rgba(255,255,255,.06),transparent 55%) 0 0/100% 100% no-repeat,
+		repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.06) 47px 48px),
+		repeating-linear-gradient(transparent 0 47px,rgba(255,255,255,.06) 47px 48px);
+	  mix-blend-mode:screen}
+
+	.wrapper{max-width:1240px;margin:32px auto;padding:0 16px}
+	
+
+
+
+	/* glass — mimic Gindex panels */
+	.glass{
+	  position: relative;
+	  overflow: hidden;
+	  border-radius: 18px; /* keep your existing radius so layout doesn’t visually jump */
+
+	  /* Gindex-style internal tint */
+	  background: linear-gradient(135deg,
+		rgba(255,255,255,0.03),
+		rgba(255,255,255,0.01)
+	  );
+
+	  /* stronger blur like Gindex */
+	  backdrop-filter: blur(20px);
+	  -webkit-backdrop-filter: blur(20px);
+
+	  /* Gindex-style border lighting: soft all around + bright top/left */
+	  border: 1px solid rgba(255,255,255,0.05);
+	  border-top:  1px solid rgba(255,255,255,0.20);
+	  border-left: 1px solid rgba(255,255,255,0.10);
+
+	  /* outer shadow more like a floating slab, no heavy inset */
+	  box-shadow:
+		0 8px 32px rgba(0,0,0,0.55);
+	}
+	/* subtle top sheen inside each glass panel (from Gindex) */
+	.glass::before{
+	  content:"";
+	  position:absolute;
+	  top:0;
+	  left:0;
+	  right:0;
+	  height:50%;
+	  pointer-events:none;
+	  background: linear-gradient(
+		180deg,
+		rgba(255,255,255,0.02),
+		transparent 100%
+	  );
+	}
+
+
+	/* Recent: click-to-preview affordance */
+	.recent .table tbody tr{ cursor:pointer; }
+	.recent .table tbody tr:hover{ background:rgba(255,255,255,.05); }
+	.recent .table tbody tr:active{ transform:translateY(1px); }
+
+	/* headers */
+	.hdr{display:flex;align-items:center;gap:10px;font-weight:800;text-transform:uppercase;font-size:12px;
+	  color:#fff; letter-spacing:.3px; padding:10px 14px 0 14px}
+	.hdr .dot{width:8px;height:8px;border-radius:50%;
+	  background:radial-gradient(circle,var(--amber) 0 40%,rgba(255,255,255,.9) 41% 50%,transparent 60%);
+	  box-shadow:0 0 10px var(--amber),0 0 30px rgba(255,180,0,.45)}
+	.hdr .rule{flex:1;height:2px;border-radius:2px;background:
+	  linear-gradient(90deg,rgba(255,180,0,.6),rgba(255,255,255,.25) 30%,rgba(88,225,255,.65));
+	  box-shadow:0 0 12px rgba(255,180,0,.35),0 0 16px rgba(88,225,255,.35)}
+
+	/* toolbar & buttons */
+	.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+	.input{flex:1;height:40px;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+	  background:linear-gradient(180deg,rgba(8,10,12,.85),rgba(8,10,12,.7)); color:var(--ink); padding:0 14px}
+	.btn{height:40px;padding:0 16px;border-radius:14px;border:1px solid rgba(255,255,255,.14);cursor:pointer;
+	  background:linear-gradient(180deg,rgba(18,20,24,.9),rgba(18,20,24,.8));color:#fff; font-weight:800}
+	.btn.pri{background:linear-gradient(180deg,var(--amber),#f7a200); color:#101216; border-color:#f7a200; box-shadow:0 0 18px rgba(255,180,0,.35)}
+	.btn:active{transform:translateY(1px)}
+	.toolbar .btn.needs-url{ box-shadow: inset 0 0 0 2px rgba(255,107,107,.55) !important; }
+
+	/* grid */
+	.grid{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:auto auto auto 1fr;gap:16px}
+	.panel{padding:10px 12px 14px}
+	.throughput{grid-column:1 / span 2}
+	.current{grid-column:1}
+	.recent{grid-column:2}
+	.hosts{grid-column:1 / span 2}
+	.logs{grid-column:1 / span 2}
+
+	:root{
+	  /* match your pinned badge */
+	  --pinned:#CFFF04;          /* change if your badge uses a different hex */
+	  --btn-bg:#12171f;
+	  --btn-border:#2a3340;
+	  --btn-glow:rgba(255,255,255,.06);
+	  --btn-text:#cfd7e3;
+	}
+
+	.btn{
+	  display:inline-flex; align-items:center; justify-content:center;
+	  height:42px; padding:0 18px;
+	  font:600 14px/1.1 "Orbitron",ui-sans-serif; letter-spacing:.2px;
+	  color:var(--btn-text);
+	  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.06)) , var(--btn-bg);
+	  border:1px solid var(--btn-border);
+	  border-radius:999px;
+	  box-shadow: inset 0 1px 0 var(--btn-glow), 0 8px 20px rgba(0,0,0,.25);
+	  transition: transform .06s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+	  user-select:none; cursor:pointer;
+	}
+	.btn:hover{ box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 10px 26px rgba(0,0,0,.35); }
+	.btn:active{ transform: translateY(1px); }
+
+	.btn-ghost{ background:rgba(255,255,255,.03); }
+	.btn-ghost:hover{ background:rgba(255,255,255,.05); }
+
+	/* START button = pinned badge color */
+	.btn-start{
+	  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.05)), var(--pinned);
+	  color:#0b0f13;
+	  border-color: color-mix(in srgb, var(--pinned) 55%, #000);
+	  box-shadow: 0 8px 24px color-mix(in srgb, var(--pinned) 24%, black);
+	}
+	.btn-start:hover{
+	  filter: brightness(1.05);
+	  box-shadow: 0 10px 28px color-mix(in srgb, var(--pinned) 30%, black);
+	}
+	.btn-start:active{ transform: translateY(1px); }
+
+	/* small bars */
+	.kv{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:12px;padding:8px 14px 0}
+
+	/* Throughput line: standard order + Draining badge on the far right */
+	.kv-main .kv-drain{
+	  margin-left:auto;          /* pushes it to the end of the row */
+	  color:var(--pinned);       /* lime accent */
+	  font-size:12px;
+	}
+	.kv-main .kv-drain.pulse{
+	  animation: drainPulse 0.9s ease-in-out infinite alternate;
+	}
+
+	@keyframes drainPulse{
+	  from{ opacity:0.35; }
+	  to{   opacity:1;    }
+	}
+
+
+
+	.bar{height:10px;margin:8px 14px;border:1px solid rgba(255,255,255,.1);border-radius:999px;overflow:hidden; position:relative}
+	.bar i{display:block;height:100%;width:34%;
+	  background:linear-gradient(90deg,var(--amber),#ffd37a 60%,#fff 100%); box-shadow:0 0 14px rgba(255,180,0,.4)}
+	.bar::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent 60%);opacity:.35}
+
+	/* neon tip micro-pulse */
+	@keyframes pulseTip {
+	  0%, 90% { filter: drop-shadow(0 0 3px rgba(255,180,0,4)); }
+	  95%     { filter: drop-shadow(0 0 10px rgba(255,180,0,9)); }
+	  100%    { filter: drop-shadow(0 0 3px rgba(255,180,0,4)); }
+	}
+
+	
+
+	/* CURRENT DOWNLOAD bar — transparent body, razor pink tip + pulse */
+	.panel.current .bar i{
+	  background: linear-gradient(90deg,
+		rgba(0,0,0,0) 0%,
+		rgba(0,0,0,0) 90%,
+		rgba(255,180,0,0.20) 96%, /* faint orange pre-glow */
+		var(--amber) 100%         /* orange tip */
+	  );
+	  box-shadow: none;                 /* no tint over the transparent body */
+	  animation: pulseTip 2s ease-in-out infinite;
+	    transition: width .45s ease-out;
+	}
+	/* THROUGHPUT track: match bg, light border, faint gloss */
+	.panel.throughput .bar{
+	  background: transparent;
+	  border-color: rgba(255,255,255,.10);
+	  position: relative;
+	  overflow: visible;             /* let tip glow show fully */
+	}
+	.panel.throughput .bar::after{
+	  opacity: .18;
+	  z-index: 0;                    /* gloss under tips */
+	}
+	
+	/* Neural strip under CURRENT: glassy micro-network */
+	.panel.current .neural-net{
+	  margin:8px 14px 4px;
+	  height:64px;
+	  border-radius:10px;
+	  overflow:hidden;
+	  position:relative;
+
+	  /* much subtler tint: dark core, soft cyan/magenta at edges only */
+	  background:
+		radial-gradient(circle at 15% 50%,  rgba(88,225,255,.20), transparent 60%),
+		radial-gradient(circle at 85% 50%,  rgba(254,52,126,.20), transparent 60%),
+		linear-gradient(180deg, #05080c, #05070a);
+		box-shadow:0 0 10px rgba(0,0,0,.35) inset;
+		
+	}
+
+	.panel.current .neural-net:after{
+	  content:'';
+	  position:absolute;
+	  inset:1px;
+	  border-radius:9px;
+	  background:linear-gradient(180deg,
+		  rgba(255,255,255,.03),
+		  transparent 60%,
+		  rgba(255,255,255,.02)
+	  );
+	  pointer-events:none;
+	}
+
+
+	.panel.current .neural-net canvas{
+	  width:100%;
+	  height:100%;
+	  display:block;
+	  filter:drop-shadow(0 0 6px rgba(88,225,255,.6));
+	  opacity:.9;
+	}
+
+	/* Throughput: make <i> span full track, no glow */
+	.panel.throughput .bar i{
+	  background: none;
+	  position: relative;
+	  display: block;
+	  width: 100% !important;
+	  height: 100%;
+	  z-index: 1;
+	  box-shadow: none !important;   /* ← kills the outer amber glow */
+	}
+
+	/* If you also want zero sheen over the track: */
+	.panel.throughput .bar::after{ opacity: 0 !important; }
+
+
+
+
+	/* CYAN = overall progress tip (target) */
+	.panel.throughput .bar i::before{
+	  content:"";
+	  position:absolute; left:0; top:0; bottom:0; right:auto;
+	  z-index: 2; /* under pink, above gloss */
+	  width: var(--pct-cyan, 0%);
+	  background: linear-gradient(90deg,
+		rgba(0,0,0,0) 0%,
+		rgba(0,0,0,0) 96%,
+		rgba(111,230,255,0.22) 98%,
+		#6FE6FF 100%);
+	  filter: drop-shadow(0 0 4px rgba(111,230,255,.65));
+	  pointer-events: none;
+	    transition: width .55s ease-out;
+
+	}
+
+
+	/* LIME = current file bytes tip (chaser) */
+	.panel.throughput .bar i::after{
+	  content:"";
+	  position:absolute; left:0; top:0; bottom:0; right:auto;
+	  z-index: 3; /* on top */
+	  width: var(--pct-pink, 0%);
+	  background: linear-gradient(90deg,
+		rgba(0,0,0,0) 0%,
+		rgba(0,0,0,0) 96%,
+		rgba(207,255,4,0.20) 98%,  /* lime pre-glow */
+		#CFFF04 100%);             /* lime tip */
+	  filter: drop-shadow(0 0 4px rgba(207,255,4,.7));
+	}
+
+
+	/* CURRENT DOWNLOAD — keep asset line single-row so bars don't bounce */
+	.panel.current .kv{
+	  display:block !important;
+	  white-space:nowrap;
+	  overflow:hidden;
+	  text-overflow:ellipsis;
+	}
+
+
+
+
+
+
+	/* pills */
+	.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;border:1px solid transparent}
+	.pill.pin{background:rgba(207,255,4,.16);color:#cfff04;border-color:rgba(207,255,4,.45)}
+	.pill.ban{background:rgba(255,107,107,.12);color:#ff6b6b;border-color:rgba(255,107,107,.45)}
+	.pill.cool{
+	  background: rgba(88,225,255,.12);
+	  color: #bfefff;
+	  border-color: rgba(88,225,255,.45);
+	}
+
+	.pill.ok{background:rgba(126,242,154,.16);color:#9dffb7;border-color:rgba(126,242,154,.45)}
+	.pill.slow{background:rgba(255,209,102,.12);color:#ffd166;border-color:rgba(255,209,102,.45)}
+	.pill.flaky{background:rgba(88,225,255,.12);color:#9be8ff;border-color:rgba(88,225,255,.45)}
+
+	/* hosts 2×2 */
+	.hostgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 12px 4px}
+	.hostcard{position:relative;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;
+	  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));
+	  box-shadow:inset 0 0 0 1px rgba(255,255,255,.02),inset 0 -24px 48px rgba(0,0,0,.3)}
+	.hostrow{display:flex;align-items:center;gap:10px;justify-content:space-between}
+	.hostmeta{display:flex;align-items:center;gap:10px}
+	.hostmeta .name{font-weight:800}
+	.rtt{color:var(--muted);font-size:12px}
+	/* HOST bars — triple razor tips: white (RTT), cyan (reliability), lime (share) */
+	.spark{
+	  height:6px;
+	  border-radius:999px;
+	  border:1px solid rgba(255,255,255,.10);
+	  margin-top:10px;
+	  background:transparent;
+	  position:relative;
+	  overflow:visible;
+	}
+	.spark>span{
+	  display:block;
+	  height:100%;
+	  width:100%;
+	  background:none;
+	  box-shadow:none;
+	}
+
+	/* WHITE (RTT heat) on the track */
+	.spark::before{
+	  content:"";
+	  position:absolute; left:0; top:0; bottom:0;
+	  width: var(--pct-white, 0%);
+	  background: linear-gradient(90deg,
+		rgba(0,0,0,0) 0%,
+		rgba(0,0,0,0) 96%,
+		rgba(255,255,255,.22) 98%,
+		#FFFFFF 100%);
+	  filter: drop-shadow(0 0 6px rgba(255,255,255,.6));
+	  pointer-events:none;
+	  animation: pulseTipWhite 2s ease-in-out infinite;
+	    transition: width .6s ease-out;
+	}
+
+	/* CYAN (reliability) on inner ::before */
+	.spark>span::before{
+	  content:"";
+	  position:absolute; left:0; top:0; bottom:0;
+	  width: var(--pct-cyan, 0%);
+	  background: linear-gradient(90deg,
+		rgba(0,0,0,0) 0%,
+		rgba(0,0,0,0) 96%,
+		rgba(111,230,255,.22) 98%,
+		#6FE6FF 100%);
+	  filter: drop-shadow(0 0 5px rgba(111,230,255,.7));
+	  pointer-events:none;
+	  animation: pulseTipCyan 2.1s ease-in-out infinite;
+	    transition: width .6s ease-out;
+
+	}
+
+	/* LIME (share) on inner ::after */
+	.spark>span::after{
+	  content:"";
+	  position:absolute; left:0; top:0; bottom:0;
+	  width: var(--pct-lime, 0%);
+	  background: linear-gradient(90deg,
+		rgba(0,0,0,0) 0%,
+		rgba(0,0,0,0) 96%,
+		rgba(207,255,4,.22) 98%,
+		#CFFF04 100%);
+	  filter: drop-shadow(0 0 5px rgba(207,255,4,.7));
+	  pointer-events:none;
+	  animation: pulseTipLime 1.9s ease-in-out infinite;
+	    transition: width .6s ease-out;
+
+	}
+
+	/* pulses */
+	@keyframes pulseTipWhite{0%,90%{filter:drop-shadow(0 0 3px rgba(255,255,255,.35))}95%{filter:drop-shadow(0 0 10px rgba(255,255,255,.95))}100%{filter:drop-shadow(0 0 3px rgba(255,255,255,.35))}}
+	@keyframes pulseTipCyan {0%,90%{filter:drop-shadow(0 0 3px rgba(111,230,255,.45))}95%{filter:drop-shadow(0 0 10px rgba(111,230,255,1))}100%{filter:drop-shadow(0 0 3px rgba(111,230,255,.45))}}
+	@keyframes pulseTipLime {0%,90%{filter:drop-shadow(0 0 3px rgba(207,255,4,.45))}95%{filter:drop-shadow(0 0 10px rgba(207,255,4,1))}100%{filter:drop-shadow(0 0 3px rgba(207,255,4,.45))}}
+
+	@keyframes pulseTipWhite{
+	  0%,90% { filter: drop-shadow(0 0 3px rgba(255,255,255,.35)); }
+	  95%    { filter: drop-shadow(0 0 10px rgba(255,255,255,.95)); }
+	  100%   { filter: drop-shadow(0 0 3px rgba(255,255,255,.35)); }
+	}
+
+
+	/* tables */
+	.table{padding:8px 14px}
+	.table table{width:100%;border-collapse:collapse;font-size:12px;color:#dfe7f2}
+	.table th,.table td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+	.table th{color:#b1bfcd;font-weight:700}
+
+	/* Use pinned badge color for panel header gradient (left side) */
+	:root { --pinned: #CFFF04; } /* keep or adjust if yours differs */
+
+	.panel .hdr .rule{
+	  /* left → pinned, fade → cyan (keep your right-side hue) */
+	  background-image: linear-gradient(90deg,
+		var(--pinned) 0%,
+		rgba(0,0,0,0) 40%,
+		#6fe6ff 100%
+	  ) !important;
+	}
+
+	/* If your theme draws the line via a pseudo-element, this covers it too */
+	.panel .hdr::after{
+	  background-image: linear-gradient(90deg,
+		var(--pinned) 0%,
+		rgba(0,0,0,0) 40%,
+		#6fe6ff 100%
+	  ) !important;
+	}
+	/* Cyan status dot (was gold) */
+	:root { --cyan:#6fe6ff; } /* tweak if your cyan differs */
+
+	.panel .hdr .dot{
+	  background: var(--cyan);
+	  border-color: color-mix(in srgb, var(--cyan) 60%, #000);
+	  box-shadow:
+		0 0 10px color-mix(in srgb, var(--cyan) 55%, transparent),
+		inset 0 0 0 2px rgba(0,0,0,.45);
+	}
+
+	/* If your dot uses an inner highlight via ::after, tint it too */
+	.panel .hdr .dot::after{
+	  background: color-mix(in srgb, var(--cyan) 85%, #fff 15%);
+	}
+	/* --- lock the app to one page, let panels scroll internally --- */
+	html, body { height:100%; overflow:hidden; }
+
+	/* safety: avoid min-height growth that forces page scroll */
+	main, .grid-lower, .logs .inner { min-height:0; }
+
+	/* Heights tuned for your layout; tweak as you like */
+	.panel.throughput { height: 12vh; }
+	.panel.current    { height: 18vh; }
+
+	/* Hosts usually fits; cap and allow internal scroll if it grows */
+	.panel.hosts      { max-height: 26vh; overflow:auto; }
+
+	/* Recent panel: table scrolls, panel stays fixed */
+	.panel.recent               { height: 18vh; }
+	.panel.recent .table        { height: calc(100% - 40px); overflow:auto; }
+	.panel.recent .table table  { width:100%; border-collapse:collapse; }
+
+	/* Logs: fill the remaining space, scroll inside */
+	.panel.logs        { height: 34vh; display:flex; flex-direction:column; }
+	.panel.logs pre    { flex:1 1 auto; min-height:0; overflow:auto; }
+
+	/* cosmetic: prevent inner bars from shrinking when panels get shorter */
+	.panel .bar { min-height: 8px; }
+
+	/* Throughput: ensure the <i> spans the full track */
+	.panel.throughput .bar i{
+	  background: none;
+	  position: relative;
+	  display: block;
+	  width: 100%;
+	  height: 100%;
+	  z-index: 1; /* sit above .bar::after gloss */
+	}
+	/* TOOLBAR BUTTONS — switch from pill to rounded rectangle (matches panels) */
+	.toolbar .btn,
+	.toolbar button{
+	  --btn-radius: 12px;
+	  border-radius: var(--btn-radius) !important;   /* was 999px */
+	  height: 40px;                                   /* keep your current height if different */
+	  padding: 0 16px;                                 /* comfy sides */
+	  background: linear-gradient(180deg,#171b21,#0e1318);
+	  border: 1px solid rgba(255,255,255,.10);
+	  box-shadow:
+		inset 0 0 0 1px rgba(255,255,255,.02),
+		0 2px 10px rgba(0,0,0,.35);
+	}
+	/* Save Location = outline folder icon image */
+	.btn-save::before{
+	  content:"";
+	  display:block;
+	  width:18px;
+	  height:18px;
+	  background-image:url('folder-outline.png'); /* path to the image */
+	  background-size:contain;
+	  background-position:center;
+	  background-repeat:no-repeat;
+	}
+
+	/* compact icon buttons for Save / Reset / Gear */
+	.toolbar .btn-icon{
+	  width: 40px;
+	  min-width: 40px;
+	  padding: 0;
+	  justify-content: center;
+	  font-size: 18px;
+	}
+
+	/* hover/active keep the same feel */
+	.toolbar .btn:hover,
+	.toolbar button:hover{
+	  border-color: rgba(255,255,255,.16);
+	}
+	.toolbar .btn:active,
+	.toolbar button:active{
+	  transform: translateY(1px);
+	  box-shadow:
+		inset 0 0 0 1px rgba(255,255,255,.02),
+		0 1px 6px rgba(0,0,0,.35);
+	}
+
+	/* optional: keep the neon STOP style but with the new radius */
+	.toolbar .btn.lit,
+	.toolbar button.lit{
+	  border-radius: 12px !important;
+	}
+	/* START button text = lime accent */
+	#btnRun,
+	button#btnRun {
+	  color: #CFFF04 !important;
+	}
+
+	/* optional: dim when disabled */
+	#btnRun[disabled] {
+	  color: rgba(207,255,4,.45) !important;
+	}
+
+
+	/* fixed heights */
+	.recent .table{ height:120px; overflow-y:auto; }         /* recent: fixed panel height (3 rows view) */
+	pre#logBox{height:320px; overflow:auto;                  /* logs: fixed box height */
+	  font:12px/1.4 ui-monospace,Consolas,monospace;color:#cfe0f6;background:rgba(0,0,0,.35);
+	  border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;margin:8px 14px}
+	/* colored log lines */
+	#logBox .log-line{
+	  white-space: pre-wrap;
+	}
+
+	/* final saves = lime accent */
+	#logBox .log-line.oksave{
+	  color: var(--pinned);          /* #CFFF04 */
+	}
+
+	/* WARN = yellow, match slow badge */
+	#logBox .log-line.warn{
+	  color: #ffd166;                /* same as .pill.slow */
+	}
+
+	/* ERROR/FAIL = purplish */
+	#logBox .log-line.error{
+	  color: #A88CFF;
+	}
+	/* [DL] = cyan accent */
+	#logBox .log-line.dl{
+	  color: var(--cyan);
+	}
+
+	/* [STOP] = purplish accent (same as error) */
+	#logBox .log-line.stop{
+	  color: #A88CFF;
+	  font-weight: 700;
+	}
+	/* [AUTOLOGIN] = amber/orange */
+	#logBox .log-line.autologin{
+	  color: var(--amber);
+	  font-weight: 700;
+	}
+
+	.log-line.autologin { color: var(--amber); }
+
+
+	footer{opacity:.45;font-weight:700;font-size:11px;text-align:right;margin-top:8px}
+
+/* ---- Gear popover ---- */
+	.gear-menu{
+	  position: absolute;
+	  right: 12px;
+	  top: 56px;
+	  width: 240px;
+	  padding: 10px 12px;
+	  background: rgba(10,12,16,.95);
+	  border: 1px solid rgba(255,255,255,.08);
+	  border-radius: 12px;
+	  box-shadow: 0 8px 30px rgba(0,0,0,.6);
+	  z-index: 9999;
+	  backdrop-filter: blur(8px);
+	}
+	.gear-row select,
+	.gear-row input{
+	  width:110px;
+	  background:rgba(0,0,0,.75);
+	  color:var(--ink); /* or var(--text) if you prefer */
+	  border:1px solid rgba(255,255,255,.18);
+	  border-radius:8px;
+	  padding:4px 6px;
+	  font-family:inherit;
+	  font-size:12px;
+	}
+
+	/* Make the dropdown list itself dark + readable */
+	.gear-row select option{
+	  background:#050810;
+	  color:var(--ink);  /* same readable color as above */
+	}
+
+	.gear-row input:disabled,
+	.gear-row select:disabled{
+	  opacity: .4;
+	  cursor: not-allowed;
+	}
+
+	/* Gear menu action row: keep buttons from overflowing */
+	.gear-actions{
+	  display:flex;
+	  gap:10px;
+	  justify-content:space-between;
+	  margin-top:6px;
+	  flex-wrap:wrap;
+	}
+
+	.gear-actions .btn{
+	  height:32px;
+	  padding:0 12px;
+	  font-size:12px;
+	  border-radius:12px;
+	  flex:1 1 90px;
+	  min-width:0;
+	  white-space:nowrap;
+	  overflow:hidden;
+	  text-overflow:ellipsis;
+	}
+
+
+/* Astryx HUD wordmark (text, not image) */
+	.brand-logo{
+	  position:fixed;
+	  top:16px;
+	  left:32px;
+	  z-index:2000;
+	  pointer-events:none;
+
+	  font-family:"Orbitron", system-ui, sans-serif;
+	  font-size:32px;
+	  letter-spacing:0.18em;
+	  font-weight:500;
+
+	  color:rgba(185, 230, 255, .10);   /* faint fill */
+	  -webkit-text-stroke:1px rgba(160, 245, 255, .55);  /* glass edge */
+	  text-shadow:
+		0 0 8px rgba(0, 0, 0, .9),
+		0 0 18px rgba(0, 255, 190, .28);
+	}
+	
+
+
+	.brand-logo .dash{
+	  margin-left:0.18em;
+	  color:#CFFF04;                    /* your lime accent */
+	  text-shadow:0 0 14px rgba(207, 255, 4, .75);
+	}
+	
+	.brand-logo::after{
+	  content: attr(data-ver);
+	  display:inline-block;
+	  margin-left:2px;
+	  margin-right:20px;
+	  font-size:11px;
+	  letter-spacing:.12em;
+	  vertical-align:middle;
+
+	  color: var(--amber);
+	  opacity: 1;
+	  text-shadow:
+		0 0 6px rgba(255,180,0,.65),
+		0 0 14px rgba(255,180,0,.35);
+	}
+
+	.drain-label { color: var(--cyan); }
+
+	.coffee-link{
+	  position:fixed;
+	  right:26px;
+	  bottom:20px;
+	  z-index:2000;
+
+	  font-family:"Orbitron", system-ui, sans-serif;
+	  font-size:10px;
+	  letter-spacing:0.16em;
+	  text-transform:uppercase;
+	  text-decoration:none;
+
+	  padding:6px 14px;
+	  border-radius:999px;
+	  border:1px solid rgba(255,255,255,.10);
+	  color:rgba(210,240,255,.75);
+	  background:radial-gradient(circle at 0 0, rgba(207,255,4,.16), transparent 55%),
+				 rgba(8,16,24,.92);
+	  box-shadow:0 0 12px rgba(0,0,0,.8);
+	  backdrop-filter:blur(10px);
+	}
+
+	.coffee-link:hover{
+	  border-color:#CFFF04;
+	  color:#CFFF04;
+	  box-shadow:0 0 18px rgba(207,255,4,.65);
+	}
+
+	/* ---- Gear status glow (no blink) ---- */
+
+	/* RED: needs login */
+	#btnGear.need-login{
+	  animation:none !important;
+	  filter:
+		drop-shadow(0 0 6px rgba(230,6,52,.55))
+		drop-shadow(0 0 12px rgba(230,6,52,.22));
+	}
+
+	/* GREEN: logged in */
+	#btnGear.logged-in{
+	  animation:none !important;
+	  filter:
+		drop-shadow(0 0 6px rgba(207,255,4,.55))
+		drop-shadow(0 0 12px rgba(207,255,4,.22));
+	}
+
+	/* ORANGE: autologin in progress (steady, overrides red) */
+	#btnGear.need-login.auto-login-flash{
+	  animation:none !important;
+	  filter:
+		drop-shadow(0 0 6px rgba(255,170,0,.55))
+		drop-shadow(0 0 12px rgba(255,170,0,.22)) !important;
+	}
+
+
+
+
+
+
+#gearApply{ width:44px; flex:0 0 44px; padding:0; text-align:center; }
+#gearApply{ display:flex; align-items:center; justify-content:center; }
+
+
+
+</style>
+</head>
+<body>
+  <div class="side-band left"></div>
+  <div class="side-band right"></div>
+
+  <div class="wrapper">
+	<div class="brand-logo" data-ver="v0.3.1">
+	  ASTRYX<span class="dash">☆</span>
+	</div>
+
+
+
+
+  <!-- toolbar (order: Start, Pause, Save Location) -->
+    <div class="toolbar">
+    <input class="input" placeholder="Paste URL(s)…">
+    <button class="btn btn-start" id="btnRun" data-state="stopped" title="Start / Stop">Start</button>
+    <button class="btn"      id="btnHold" data-state="resumed" title="Pause / Resume">Pause</button>
+    <button class="btn btn-icon btn-save" id="btnSave" title="Save location"></button>
+	<button class="btn btn-icon" id="btnUpdate" title="Update Astryx">⬆</button>
+    <button class="btn btn-icon" id="btnReset" title="Relaunch WebUI">⟲</button>
+    <button class="btn btn-icon" id="btnGear"  title="Settings">⚙</button>
+
+  </div>
+  <!-- GEAR POPOVER (no layout impact; absolute popover) -->
+  <div id="gearMenu" class="gear-menu" style="display:none;">
+    <div class="gear-row">
+      <label for="selMode">Mode</label>
+      <select id="selMode">
+        <option value="all">All</option>
+        <option value="img">Images only</option>
+        <option value="vid">Videos only</option>
+      </select>
+    </div>
+
+    <div class="gear-row">
+      <label for="nvWorkers">Non-video workers</label>
+      <input id="nvWorkers" type="number" min="1" max="64" step="1"/>
+    </div>
+
+    <div class="gear-row">
+      <label for="vidWorkers">Video workers</label>
+      <input id="vidWorkers" type="number" min="1" max="32" step="1"/>
+    </div>
+	
+	<hr style="border:0;border-top:1px solid rgba(255,255,255,.08);margin:10px 0">
+
+	<div class="gear-row">
+	  <label for="coomerUser">Coomer user</label>
+	  <input id="coomerUser" type="text" autocomplete="username" placeholder="username"/>
+	</div>
+
+	<div class="gear-row">
+	  <label for="coomerPass">Coomer pass</label>
+	  <input id="coomerPass" type="password" autocomplete="current-password" placeholder="password"/>
+	</div>
+
+	<div class="gear-actions">
+	  <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);user-select:none">
+		<input id="coomerRemember" type="checkbox" style="accent-color:var(--accent)" />
+		Save
+	  </label>
+
+	  <button class="btn" id="btnCoomerLogin" style="flex:1">Login</button>
+	  <button class="btn" id="gearApply" title="Mode and worker help">?</button>
+	</div>
+
+
+
+  </div>
+
+  <div class="grid">
+    <!-- THROUGHPUT -->
+    <section class="glass panel throughput">
+  <div class="hdr"><span class="dot"></span> Throughput <span class="rule"></span></div>
+
+      <div class="kv kv-main">
+    <span class="kv-posts"><span>Posts: 0 / 0</span></span>
+    <span class="kv-now">Now 0.0 MB/s</span>
+    <span class="kv-avg">Avg 0.0 MB/s</span>
+    <span class="kv-queue">Queue 0</span>
+    <span class="kv-nv">NV 0</span>
+    <span class="kv-vv">VID 0</span>
+    <span class="kv-runtime">Runtime 00:00:00</span>
+    <span class="kv-drain"></span>
+  </div>
+
+
+
+  <div class="bar"><i></i></div>
+</section>
+
+
+
+    <!-- CURRENT DOWNLOAD -->
+	<section class="glass panel current">
+	  <div class="hdr"><span class="dot"></span> Current Download <span class="rule"></span></div>
+	  <div class="kv" style="padding-bottom:6px">Idle</div>
+	  <div class="bar"><i></i></div>
+
+	  <!-- neural “mandelbrot-ish” strip -->
+	  <div class="neural-net">
+		<canvas id="neuralStrip" width="900" height="80"></canvas>
+	  </div>
+	</section>
+
+
+
+<script>
+/* -------------------- CURRENT DOWNLOAD (name • % • ETA + draining state) -------------------- */
+	(function(){
+	  const panel = document.querySelector('.panel.current');
+	  if (!panel) return;
+
+	  const kv  = panel.querySelector('.kv');       // the “Asset — …” line
+	  const bar = panel.querySelector('.bar i');    // the fill element
+
+		function paintFromStatus(s){
+		const cur    = s && s.current || null;
+		const stRaw  = String(s && (s.state || s.status) || '').toLowerCase();
+		const queue  = Number((s && (s.queue ?? s.queueCount)) ?? 0);
+
+		// try to infer active-download count if backend exposes it
+		const nvActive  = Number(s && (s.nvActive  ?? s.nv_active  ?? s.activeNv  ?? 0));
+		const vidActive = Number(s && (s.vidActive ?? s.vid_active ?? s.activeVid ?? 0));
+		const active    = nvActive + vidActive;
+
+		const doneish      = /idle|done|finished|complete|completed/.test(stRaw);
+		const draining     = (window.__AF_DRAINING === true);
+		const doneFromLog  = (window.__AF_DONE_FROM_LOG === true);
+
+		// If run is truly done, don't keep showing a stale asset snapshot.
+		if ((doneish || doneFromLog) && !active && queue === 0) {
+		  if (kv)  kv.textContent = 'Idle';
+		  if (bar) bar.style.width = '0%';
+		  return;
+		}
+
+		// [NEURAL.INTENSITY] very calm when load is tiny, ramp only on real load
+	try {
+	  const load = Math.max(0, active + queue * 0.25);  // treat NV+VID+queue as "weight"
+
+	  let intensity;
+	  if (load <= 1) {
+		// true / near-idle → almost no motion
+		intensity = 0.12;
+	  } else if (load >= 8) {
+		// heavy load → max chaos
+		intensity = 0.90;
+	  } else {
+		// smooth ramp between 1 and 8 "load"
+		const t = (load - 1) / (8 - 1);          // 0 → 1
+		intensity = 0.12 + t * (0.90 - 0.12);    // 0.12 → 0.90
+	  }
+
+	  window.__AF_NEURAL_INTENSITY = intensity;
+	} catch {}
+
+
+
+
+
+		// no current asset → either draining or truly idle
+		if (!cur) {
+		  if (kv) {
+			if (draining) {
+			  const count = active || queue || 0;
+			  if (count > 0) {
+				kv.innerHTML =
+				  `<span class="drain-label">Draining </span>` +
+				  `${count} active file${count === 1 ? '' : 's'}…`;
+			  } else {
+				kv.innerHTML = `<span class="drain-label">Draining </span>active downloads…`;
+			  }
+			} else {
+			  kv.textContent = 'Idle';
+			}
+		  }
+		  if (bar) bar.style.width = '0%';
+		  return;
+		}
+
+
+		// normal live download
+		const rawName  = String(cur.name || '—');
+		const MAX_NAME = 40;
+		const name = rawName.length > MAX_NAME
+		  ? rawName.slice(0, MAX_NAME - 1) + '…'
+		  : rawName;
+
+		const pct = Math.max(0, Math.min(100, Number(cur.pct || 0)));
+		const eta = (cur.eta && String(cur.eta)) || '—';
+
+		if (kv)  kv.textContent = `Asset — ${name} · ${pct}% · ETA ${eta}`;
+		if (bar) bar.style.width = pct + '%';
+	  }
+
+
+  async function poll(){
+    try{
+      const r = await fetch('/api/status', { cache: 'no-store' });
+      if (!r.ok) return;
+      const s = await r.json();
+      paintFromStatus(s);
+    }catch{}
+  }
+
+  // initial + repeat
+  poll();
+  if (window.__currentTimer) clearInterval(window.__currentTimer);
+  window.__currentTimer = setInterval(poll, 1000);
+})();
+</script>
+
+
+    <!-- RECENT -->
+    <section class="glass panel recent">
+      <div class="hdr"><span class="dot"></span> Recent — click to preview <span class="rule"></span></div>
+      <div class="table">
+        <table><tbody>
+          <tr><td>—</td></tr>
+        </tbody></table>
+      </div>
+    </section>
+
+    <!-- HOSTS -->
+    <section class="glass panel hosts">
+      <div class="hdr"><span class="dot"></span> Hosts — Link Health <span class="rule"></span></div>
+      <div class="hostgrid">
+        <div class="hostcard"><div class="hostrow"><div class="hostmeta"><div class="name">—</div></div><div class="rtt">—</div></div><div class="spark"><span style="width:0%"></span></div></div>
+        <div class="hostcard"><div class="hostrow"><div class="hostmeta"><div class="name">—</div></div><div class="rtt">—</div></div><div class="spark"><span style="width:0%"></span></div></div>
+        <div class="hostcard"><div class="hostrow"><div class="hostmeta"><div class="name">—</div></div><div class="rtt">—</div></div><div class="spark"><span style="width:0%"></span></div></div>
+        <div class="hostcard"><div class="hostrow"><div class="hostmeta"><div class="name">—</div></div><div class="rtt">—</div></div><div class="spark"><span style="width:0%"></span></div></div>
+      </div>
+    </section>
+
+    <!-- LOGS -->
+    <section class="glass panel logs">
+      <div class="hdr"><span class="dot"></span> Logs <span class="rule"></span></div>
+      <pre id="logBox"></pre>
+    </section>
+  </div>
+
+  <footer>© Astryx Webui</footer>
+</div>
+
+<script>
+	// UI state flags
+	let loginPending = false;
+	let rememberPending = false;
+	let autoRetryUsed = false;
+
+	/* ---------- Start / Stop (double-press hard stop, keep backend sync) ---------- */
+	document.addEventListener('DOMContentLoaded', async () => {
+	const btnCoomerLogin = document.getElementById('btnCoomerLogin');
+	const user = (coomerUser?.value || '').trim();
+	const pass = (coomerPass?.value || '').trim();
+	const coomerRemember = document.getElementById('coomerRemember');
+	
+	coomerRemember?.addEventListener('change', async () => {
+	if (coomerRemember.checked) { rememberPending = true; return; }
+	  try {
+		// wipe UI fields so it's obvious
+		const u = document.getElementById('coomerUser'); if (u) u.value = '';
+		const p = document.getElementById('coomerPass'); if (p) p.value = '';
+
+		await fetch('/api/coomer/remember', {
+		  method: 'POST',
+		  headers: { 'Content-Type':'application/json' },
+		  body: JSON.stringify({ remember: false })
+		});
+
+		if (window.appendLogLine) appendLogLine('SESSION', 'Saved login cleared');
+	  } catch {}
+	});
+
+
+
+	btnCoomerLogin?.addEventListener('click', async (e) => {
+	e.stopPropagation();
+	// --- Retry auto-login once ---
+	if (btnCoomerLogin?.dataset.mode === 'retry') {
+	  autoRetryUsed = true;
+
+	  loginPending = true;
+	  btnCoomerLogin.textContent = 'Logging in…';
+	  btnCoomerLogin.disabled = true;
+
+	  try { flashGearOrange(); } catch {}
+	  if (window.appendLogLine) appendLogLine('SESSION', 'Retrying auto-login…');
+
+	  try {
+		await fetch('/api/coomer/retry', { method: 'POST' });
+	  } catch {
+		// leave pending; status poll will settle it or user can manual login
+	  }
+	  return;
+	}
+
+  // START login, do NOT finish it here
+  loginPending = true;
+  btnCoomerLogin.textContent = 'Logging in…';
+  btnCoomerLogin.disabled = true;
+  if (window.appendLogLine) appendLogLine('SESSION', 'Logging in…');
+
+  try {
+  const user = (coomerUser?.value || '').trim();
+  const pass = (coomerPass?.value || '').trim();
+  if (!user || !pass) {
+    loginPending = false;
+    btnCoomerLogin.textContent = 'Login';
+    btnCoomerLogin.disabled = false;
+    if (window.appendLogLine) appendLogLine('SESSION', 'Missing username/password');
+    return;
+  }
+
+    const ac = new AbortController();
+  const to = setTimeout(() => ac.abort(), 120000); // 120s
+
+  let r = null;
+  let j = null;
+
+  try {
+    r = await fetch('/api/coomer/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ac.signal,
+      body: JSON.stringify({ user, pass, remember: (coomerRemember?.checked ? '1' : '0') })
+    });
+
+    j = await r.json().catch(() => null);
+  } catch (err) {
+    // If we timed out/aborted, keep pending and let /api/status latch finish it.
+    if (err && (err.name === 'AbortError')) {
+      if (window.appendLogLine) appendLogLine('SESSION', 'Login still in progress…');
+      // leave loginPending=true, button stays "Logging in…"
+      return;
+    }
+    throw err; // real network error → outer catch
+  } finally {
+    clearTimeout(to);
+  }
+
+  if (!r || !r.ok || !j || !j.ok) {
+    loginPending = false;
+    btnCoomerLogin.textContent = 'Login';
+    btnCoomerLogin.disabled = false;
+    if (window.appendLogLine) appendLogLine('SESSION', 'Login failed');
+    alert((j && j.message) ? j.message : 'Login failed');
+    return;
+  }
+
+
+  // success: leave button as "Logging in…"
+  // status poll latch will finish it
+  if (coomerRemember?.checked) coomerRemember.checked = true; // keep Save visually checked
+
+
+} catch {
+  loginPending = false;
+  btnCoomerLogin.textContent = 'Login';
+  btnCoomerLogin.disabled = false;
+  if (window.appendLogLine) appendLogLine('SESSION', 'Login failed (network)');
+  alert('Login failed (network)');
+}
+
+});
+
+
+
+  const btn    = document.getElementById('btnRun');
+  const urlBox = document.querySelector('.toolbar .input');
+  if (!btn) return;
+
+  // URL only lives while page is open; no localStorage
+  function setRunning(on){
+    btn.dataset.state = on ? 'running' : 'stopped';
+    btn.textContent   = on ? 'Stop' : 'Start';
+    btn.removeAttribute('disabled');
+    btn.style.opacity = '';
+  }
+
+  if (!btn.textContent || !btn.textContent.trim()) {
+    setRunning(false);
+  }
+
+  let lastRunning       = null;
+  let stopArmedAt       = 0;               // first stop press time
+  const HARD_WINDOW_MS  = 999999999;       // effectively “anytime after” per your ask
+  let terminalStreak    = 0;               // require terminal twice before flipping to Start
+  let __runningUnknown  = true;            // true until first /api/status sync completes
+  let everRan           = false;           // becomes true once we’ve seen a real run
+	  // tiny front-end runtime timer (shared via window)
+	  window.__rtStartMs = window.__rtStartMs || 0;
+	  window.__rtEndMs   = window.__rtEndMs   || 0;
+	// NEW: flag that the log stream saw "[DONE] run"
+	  window.__AF_DONE_FROM_LOG = false;
+  
+  async function doStart(){
+    const url = (urlBox?.value || '').trim();
+    if (!url){
+      btn.classList.add('needs-url');
+      setTimeout(()=>btn.classList.remove('needs-url'),600);
+      return;
+    }
+    try{
+      let r = await fetch('/api/start', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ url })
+      });
+      if (!r.ok){
+        r = await fetch('/api/start?url=' + encodeURIComponent(url), { method:'POST' });
+      }
+      if (r.ok){
+        stopArmedAt    = 0;
+        everRan        = false;   // fresh run
+        terminalStreak = 0;
+		// runtime: start ticking from here
+        window.__rtStartMs = Date.now();
+        window.__rtEndMs   = 0;
+        setRunning(true);         // flip to Stop immediately
+      }
+    }catch{}
+  }
+
+	    async function doStop(){
+    const now = Date.now();
+
+    // second press while still running => HARD stop
+    if (stopArmedAt && (now - stopArmedAt) <= HARD_WINDOW_MS) {
+      try{
+        const r = await fetch('/api/stop-hard', { method:'POST' });
+        if (r.ok) { stopArmedAt = 0; }
+      }catch{}
+      return;
+    }
+
+      // first press => GRACEFUL stop
+	  stopArmedAt = now;
+	  window.__AF_DRAINING = true;  // <— add this line
+	  try{
+		await fetch('/api/stop', { method:'POST' });
+		// keep showing STOP while backend drains; syncRunning will flip when done
+		setRunning(true);
+	  }catch{}
+
+  }
+
+  // Single click handler
+  btn.addEventListener('click', () => {
+    const st = btn.dataset.state || 'stopped';
+
+    // If a soft stop has been requested, ANY second click hard-stops,
+    // regardless of what the button label/state currently says.
+    if (stopArmedAt) {
+      doStop();   // doStop() will route to /api/stop-hard on second press
+      return;
+    }
+
+    if (st === 'running') {
+      // currently running → Stop (first = graceful, later = hard via stopArmedAt)
+      doStop();
+    } else {
+      // currently stopped/idle → Start
+      doStart();
+    }
+  });
+
+
+
+  async function syncRunning(){
+    try{
+      const r = await fetch('/api/status', { cache:'no-store' });
+      if (!r.ok) throw new Error('bad status');
+      const s      = await r.json();
+	  const gear = document.getElementById('btnGear');
+		if (gear) {
+		  const need = !!s.needLogin;
+		  gear.classList.toggle('need-login', need);
+		  gear.classList.toggle('logged-in', !need);
+		}
+		// keep the "Save" checkbox in sync with backend
+		if (!loginPending && !rememberPending && coomerRemember) coomerRemember.checked = !!s.coomerRemember;
+		if (rememberPending && !!s.coomerRemember) rememberPending = false;
+		// ---- Login button mode: Retry once (when saved creds exist + needLogin) ----
+		const btnLogin = document.getElementById('btnCoomerLogin');
+		if (btnLogin && !loginPending) {
+		  const canRetry = !!s.needLogin && !!s.coomerRemember && !autoRetryUsed;
+		  btnLogin.dataset.mode = canRetry ? 'retry' : 'login';
+		  btnLogin.textContent = canRetry ? 'Retry' : 'Login';
+		}
+
+
+		// ---- login completion latch ----
+		if (loginPending && !s.needLogin) {
+		  loginPending = false;
+
+		  if (coomerRemember) coomerRemember.checked = !!s.coomerRemember;
+
+		  const btn = document.getElementById('btnCoomerLogin');
+		  if (btn) {
+			btn.textContent = 'Login';
+			btn.disabled = false;
+		  }
+
+		  if (window.appendLogLine) appendLogLine('SESSION', 'Login OK');
+		}
+
+
+      const stRaw  = String(s.state || s.status || '').toLowerCase();
+      const rtStr  = String(s.runtime || '').trim();
+	    // If the log stream already told us "[DONE] run", force back to START.
+        if (window.__AF_DONE_FROM_LOG) {
+        // tie runtime end to the same moment the button flips back to START
+        if (window.__rtStartMs && !window.__rtEndMs) {
+          window.__rtEndMs = Date.now();
+        }
+
+        window.__AF_DONE_FROM_LOG = false;
+        everRan        = false;
+        lastRunning    = false;
+        stopArmedAt    = 0;
+        terminalStreak = 0;
+        __runningUnknown = false;
+        setRunning(false);   // show START
+        return;
+      }
+
+
+
+                  const total     = Number(s.total ?? 0);
+      const completed = Number(s.completed ?? 0);
+      const queue     = Number(s.queue ?? 0);
+
+      const terminalText =
+        /idle|done|completed|finished|complete|stopped/.test(stRaw);
+
+      // leftover posts/queue = work, but only when we’re not in an explicit
+      // terminal state string
+      const hasWork =
+        !terminalText &&
+        ((total > 0 && completed < total) || queue > 0);
+
+      const paused =
+        (stRaw === 'paused' || stRaw === 'hold') ||
+        !!s.paused || !!s.hold;
+
+      // backend considered “running” if:
+      //   - state says running, OR
+      //   - it exposes a running flag, OR
+      //   - we clearly have work in flight, OR
+      //   - runtime has started ticking in a non-terminal state
+      const candidateRunning =
+        (stRaw === 'running') ||
+        !!s.running ||
+        hasWork ||
+        (!terminalText && rtStr && rtStr !== '00:00:00');
+
+      const doneish  = terminalText && !candidateRunning;
+      const draining = (window.__AF_DRAINING === true) ||
+                 ((!!stopArmedAt || stRaw.includes('stop')) && !doneish);
+
+		// expose draining for other panels (throughput, current, etc.)
+		window.__AF_DRAINING = draining;
+      __runningUnknown = false;
+
+
+
+      // If we just hit Start and haven’t seen the run actually start yet,
+      // don’t flash back to “Start” on the first poll or two.
+      const uiState = btn.dataset.state || 'stopped';
+            const looksLikeFreshStart =
+        uiState === 'running' &&
+        !everRan &&
+        !candidateRunning &&
+        !paused &&
+        !draining;
+
+
+      if (looksLikeFreshStart){
+        // keep whatever the button currently says (Stop) until we either see
+        // candidateRunning or a real terminal state.
+        return;
+      }
+
+      // Only count "terminal streak" once we’ve seen a real run this session
+      if (everRan && !candidateRunning && !paused && terminalText && !draining){
+        terminalStreak++;
+      } else {
+        terminalStreak = 0;
+      }
+
+      // After 2 consecutive terminal ticks post-run, flip back to START
+      if (terminalStreak >= 2){
+        everRan        = false;
+        lastRunning    = false;
+        stopArmedAt    = 0;
+        setRunning(false);   // show START
+        return;
+      }
+
+      if (candidateRunning) everRan = true;
+      lastRunning = candidateRunning;
+
+      // effective “running” for the button
+      setRunning(candidateRunning || paused || draining);
+
+      if (!candidateRunning && !paused && !draining){
+        stopArmedAt = 0;
+      }
+    }
+    catch{
+      everRan        = false;
+      lastRunning    = false;
+      terminalStreak = 0;
+      stopArmedAt    = 0;
+      setRunning(false);
+      __runningUnknown = false;
+    }
+  }
+  // ---------------- AF_HEARTBEAT: keep app alive while tab is open ----------------
+  (function(){
+    function sendPing(){
+      try{
+        const payload = '{}';
+        if (navigator.sendBeacon){
+          const blob = new Blob([payload], { type:'application/json' });
+          navigator.sendBeacon('/api/ping', blob);
+        } else {
+          fetch('/api/ping', {
+            method: 'POST',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: payload
+          }).catch(() => {});
+        }
+      } catch {}
+    }
+
+    // first ping as soon as script runs
+    sendPing();
+
+    // then every 5s while the tab is alive
+    if (window.__afPingTimer) clearInterval(window.__afPingTimer);
+    window.__afPingTimer = setInterval(sendPing, 5000);
+  })();
+
+  // initial sync + poll
+  await syncRunning();
+  if (window.__runTimer) clearInterval(window.__runTimer);
+  window.__runTimer = setInterval(syncRunning, 1000);
+});
+</script>
+
+
+
+<script>
+/* ---------- Pause / Resume wiring ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const btnHold = document.getElementById('btnHold');
+  if (!btnHold) return;
+
+  function setHold(paused){
+    btnHold.dataset.state = paused ? 'paused' : 'resumed';
+    btnHold.textContent   = paused ? 'Resume' : 'Pause';
+  }
+
+  async function postTry(urls){
+    for (const u of urls){
+      try { const r = await fetch(u, { method:'POST' }); if (r.ok) return true; }
+      catch {}
+    }
+    return false;
+  }
+
+    async function doPause(){
+    // flip immediately; backend sync will correct if needed
+    setHold(true);
+    await postTry([
+      '/api/pause',
+      '/api/hold',
+      '/api/pause?on=1',
+      '/api/hold?on=1'
+    ]);
+  }
+  async function doResume(){
+    setHold(false);
+    await postTry([
+      '/api/resume',
+      '/api/unhold',
+      '/api/pause?on=0',
+      '/api/hold?on=0'
+    ]);
+  }
+
+
+    btnHold.addEventListener('click', () => {
+    const st = btnHold.dataset.state || 'resumed';
+    if (st === 'paused') doResume();
+    else doPause();
+  });
+
+
+  // keep button in sync with backend status
+  async function syncHold(){
+    try{
+      const r = await fetch('/api/status', { cache:'no-store' });
+      if (!r.ok) return;
+      const s = await r.json();
+      const stRaw = String(s.state || s.status || '').toLowerCase();
+      const paused = (stRaw === 'paused' || stRaw === 'hold') || !!s.paused || !!s.hold;
+      setHold(paused);
+    }catch{}
+  }
+
+	  syncHold();
+	  if (window.__holdTimer) clearInterval(window.__holdTimer);
+	  window.__holdTimer = setInterval(syncHold, 1000);
+	});
+
+	/* ---------- Save Location button (open current folder) ---------- */
+	document.addEventListener('DOMContentLoaded', () => {
+	  const btnSave = document.getElementById('btnSave');
+	  if (!btnSave) return;
+
+	  btnSave.addEventListener('click', async () => {
+		btnSave.disabled = true;
+		btnSave.classList.add('lit');
+
+		try {
+		  await fetch('/api/open-folder', { method: 'POST' });
+		} catch { /* ignore */ }
+
+		setTimeout(() => {
+		  btnSave.disabled = false;
+		  btnSave.classList.remove('lit');
+		}, 400);
+	  });
+	});
+	</script>
+
+<script>
+/* -------------------- LOG tail + SSE (fixed-height box) -------------------- */
+(function(){
+
+  const pre = document.getElementById('logBox');
+  if (!pre || window.__HUD_LOG_WIRED__) return; window.__HUD_LOG_WIRED__ = true;
+	  function waitForBackendThenReload(delay = 400){
+	  if (window.__AF_RELOAD_ARMED) return;
+	  window.__AF_RELOAD_ARMED = true;
+
+	  setTimeout(async () => {
+		for (let i = 0; i < 40; i++) {
+		  try {
+			const r = await fetch('/api/ping?ts=' + Date.now(), { cache:'no-store' });
+			if (r.ok) {
+			  location.replace(location.pathname + '?upd=' + Date.now());
+			  return;
+			}
+		  } catch {}
+		  await new Promise(r => setTimeout(r, 500));
+		}
+		// last resort
+		location.replace(location.pathname + '?upd=' + Date.now());
+	  }, delay);
+	}
+
+
+  const norm = s => String(s || '').replace(/\r\n|\n|\r/g, '\n');
+    // ---- [AUTOLOGIN] working indicator (single animated line) ----
+  const _spinFrames = ['|','/','-','\\'];
+  function _spinStart(who, prefix, msg){
+    if (window.__AF_AUTOLOGIN_SPIN_TIMER) return;
+
+    const div = document.createElement('div');
+    div.className = 'log-line autologin';
+    div.dataset.role = 'autologin-spin';
+	div.dataset.spinPrefix = prefix || 'AUTOLOGIN';
+	div.dataset.spinMsg = msg || '';
+    pre.appendChild(div);
+
+    let i = 0;
+    window.__AF_AUTOLOGIN_SPIN_DIV = div;
+    window.__AF_AUTOLOGIN_SPIN_TIMER = setInterval(() => {
+      const frame = _spinFrames[i++ % _spinFrames.length];
+      const p = div.dataset.spinPrefix || 'AUTOLOGIN';
+		const m = div.dataset.spinMsg || (p === 'AUTOLOGIN' ? `attempting login as '${who || '…'}'` : 'working…');
+		div.textContent = `[${p}] ${frame} ${m}`;
+		window.__AF_AUTOLOGIN_SPIN_ROLE = p;
+
+      const atBottom = (pre.scrollHeight - pre.scrollTop - pre.clientHeight) < 40;
+      if (atBottom) pre.scrollTop = pre.scrollHeight;
+    }, 180);
+  }
+
+  function _spinStop(finalLine){
+    try {
+      if (window.__AF_AUTOLOGIN_SPIN_TIMER){
+        clearInterval(window.__AF_AUTOLOGIN_SPIN_TIMER);
+        window.__AF_AUTOLOGIN_SPIN_TIMER = null;
+      }
+      const div = window.__AF_AUTOLOGIN_SPIN_DIV;
+      if (div){
+        if (finalLine) div.textContent = finalLine;
+		// terminal: ensure orange state is cleared so red/green can take over cleanly
+		try { document.getElementById('btnGear')?.classList.remove('auto-login-flash'); } catch {}
+
+        window.__AF_AUTOLOGIN_SPIN_DIV = null;
+      }
+    } catch {}
+  }
+
+  // --- idle "Working…" spinner if log goes quiet ---
+	  window.__AF_IDLE_LOG_TIMER = window.__AF_IDLE_LOG_TIMER || null;
+	  window.__AF_IDLE_LOG_SPIN  = window.__AF_IDLE_LOG_SPIN  || false;
+
+	  function _idleLogStop(){
+	  try {
+		if (window.__AF_IDLE_LOG_SPIN && window.__AF_AUTOLOGIN_SPIN_ROLE === 'WORK') {
+		  window.__AF_IDLE_LOG_SPIN = false;
+		  _spinStop(); // remove the spinner line
+		}
+	  } catch {}
+	}
+
+
+	  function _idleLogReset(){
+		try {
+		  if (window.__AF_IDLE_LOG_TIMER) clearTimeout(window.__AF_IDLE_LOG_TIMER);
+		  window.__AF_IDLE_LOG_TIMER = setTimeout(() => {
+			try {
+			  // don't stack spinners; if another spinner is active, skip
+			  if (window.__AF_AUTOLOGIN_SPIN_TIMER) return;
+			  if (window.__AF_IDLE_LOG_SPIN) return;
+			  if (!window.__AF_URL_SET_SEEN) return;
+			  window.__AF_IDLE_LOG_SPIN = true;
+			  _spinStart('', 'WORK', 'Working…');
+			} catch {}
+		  }, 10_000);
+		} catch {}
+	  }
+
+	function add(line){
+		  if (!line) return;
+
+		  // DO NOT reload here — handled by stream()/waitForBackendThenReload
+		  // (UPDATE_RESTART is still logged normally)
+
+		  const t = line.toLowerCase();
+
+		  // latch: WORK spinner is not allowed until URL is set
+		  if (t.includes('[webui]') && t.includes('url set')) {
+			window.__AF_URL_SET_SEEN = true;
+		  }
+
+
+	  // terminal-ish lines: don't start (or keep) the idle "Working…" timer
+	  if (t.includes('[done]') || (t.includes('[stop]') && t.includes('completed'))) {
+	    window.__AF_URL_SET_SEEN = false;
+		_idleLogStop();
+		window.__AF_IDLE_LOG_SPIN = false;
+		try {
+		  if (window.__AF_IDLE_LOG_TIMER) {
+			clearTimeout(window.__AF_IDLE_LOG_TIMER);
+			window.__AF_IDLE_LOG_TIMER = null;
+		  }
+		} catch {}
+	  } else {
+		_idleLogStop();   // kill "Working…" on any real line
+		_idleLogReset();  // restart 10s idle timer
+	  }
+
+	  const atBottom = (pre.scrollHeight - pre.scrollTop - pre.clientHeight) < 40;
+
+	  let cls = '';
+
+	  // drop noisy ui.ini save chatter
+		if (t.includes('[uiini.save]')) return;
+      // ---- [PW] install spinner start/stop (tolerant match) ----
+      const isPwStart =
+        t.includes('[pw]') && t.includes('first run') && t.includes('playwright') && t.includes('install');
+      const isPwStop =
+        t.includes('[pw]') && (t.includes('install complete') || t.includes('install failed') || t.includes('install exit codes'));
+
+      // suppress legacy spammy per-frame lines (older builds)
+      if (t.includes('[pw] installing')) return;
+
+      if (isPwStart) {
+        window.__AF_PW_INSTALLING = true;
+        _spinStart('', 'PW', 'Installing Playwright browsers…');
+        return; // eat the raw start line; spinner replaces it
+      }
+      if (isPwStop) {
+        if (window.__AF_PW_INSTALLING) {
+          window.__AF_PW_INSTALLING = false;
+          _spinStop(line); // keep the real terminal line
+          return;
+        }
+        // if we weren't spinning, let it fall through and print normally
+      }
+
+
+	        // [AUTOLOGIN] spinner start/stop
+      if (t.includes('[autologin] attempting login as')) {
+	  let who = '';
+	  try {
+		const m = line.match(/attempting login as\s+'([^']+)'/i);
+		if (m && m[1]) who = m[1];
+	  } catch {}
+	  _spinStart(who);
+	  flashGearOrange();   // <-- ADD THIS LINE
+	  return;              // keep suppressing the raw line
+	}
+
+
+
+      // stop spinner on terminal-ish outcomes
+      if (window.__AF_AUTOLOGIN_SPIN_TIMER) {
+	  if (t.includes('[autologin] login ok') || t.includes('[autologin] login ok ::') || t.includes('login ok')) {
+		_spinStop('[AUTOLOGIN] ✓ login OK');
+		return; // <- add this (drops raw OK lines)
+	  } else if (
+		  !window.__AF_PW_INSTALLING &&
+		  (t.includes('[coomer.login] fail') || t.includes('remember is off') || t.includes(' -> skip') || t.includes('login failed'))
+		) {
+		  _spinStop('[AUTOLOGIN] ✕ login failed / skipped');
+		  document.getElementById('btnGear')?.classList.remove('auto-login-flash');
+		  return;
+		}
+
+
+	}
+
+
+      // classify [AUTOLOGIN] lines so they render orange too
+      if (!cls && t.includes('[autologin]')) cls = 'autologin';
+
+		if (t.includes('[autologin]')) {
+		  cls += ' autologin';
+
+		  // flash only on real attempt, not skip
+		  if (t.includes('attempting login') || t.includes('invoking')) {
+			flashGearOrange();
+		  }
+		}
+
+
+	  // mark draining when the graceful-stop line shows up
+	  if (t.includes('finishing active downloads')) {
+		window.__AF_DRAINING = true;
+	  }
+
+	  // when the run is fully done, remember it and clear draining
+	  if (t.includes('[done] run')) {
+		window.__AF_DONE_FROM_LOG = true;
+		window.__AF_DRAINING = false;
+	  }
+
+
+	  // errors/fails first
+		// soften common transient noise (don’t scream “error”)
+		if (t.includes('[qf]') && t.includes('head failed') && t.includes('taskcanceledexception')) {
+		  cls = 'warn';
+		  line = line.replace(/\[QF\]\s*HEAD failed:.*$/i, '[QF] HEAD timed out (transient) — continuing');
+		}
+		if (t.includes('[range.probe]') && t.includes('→ fail')) {
+		  cls = 'warn';
+		  line = line.replace(/\[RANGE\.PROBE\]\s*(.+?)\s*→\s*FAIL\s*\((.+?)\)/i, '[RANGE.PROBE] $1 probe failed ($2) — continuing');
+		}
+
+		  // final saves: "[OK] . saved ."
+		else if (t.includes('[ok]') && t.includes(' saved')) {
+		  cls = 'oksave';
+		  if (window.__AF_PULSE_SAVE) window.__AF_PULSE_SAVE();  // per-worker pulses only
+		  // no global SAVE_SWEEP spike
+		}
+
+
+	  // warnings
+	  else if (t.includes('warn')) {
+		cls = 'warn';
+	  }
+	  // navigation: [NAV] → same as 'slow' badge (warn color)
+	  else if (t.includes('[nav]')) {
+		cls = 'warn';
+	  }
+	  // downloads: [DL]
+	  else if (t.includes('[dl]')) {
+		cls = 'dl';
+	  }
+	  // stop events: [STOP]
+	  else if (t.includes('[stop]')) {
+		cls = 'stop';
+	  }
+
+	  const div = document.createElement('div');
+	  div.className = 'log-line' + (cls ? (' ' + cls) : '');
+	  div.textContent = line;
+	  pre.appendChild(div);
+
+	  if (atBottom) pre.scrollTop = pre.scrollHeight;
+	}
+
+
+
+
+
+
+    async function tail(){
+    try{
+      const r = await fetch('/api/log/tail?limit=300', { cache:'no-store' });
+      if(!r.ok) return;
+      const j = await r.json().catch(()=>({lines:[]})); 
+      pre.innerHTML = '';  // <- was pre.textContent = '';
+      (j.lines || j.items || []).forEach(x => norm(x).split('\n').forEach(add));
+    }catch{}
+  }
+
+  function stream(){
+	  try{
+		const es = new EventSource('/api/log/stream');
+		let __afReloadArmed = false;
+
+		function waitForBackendThenReload(delayMs = 0) {
+		  if (__afReloadArmed) return;
+		  __afReloadArmed = true;
+
+		  const t0 = Date.now();
+		  let attempt = 0;
+
+		  const tick = async () => {
+			attempt++;
+			try {
+			  const r = await fetch('/api/ping?ts=' + Date.now(), { cache: 'no-store' });
+			  if (r.ok) {
+				const u = new URL(location.href);
+				u.searchParams.set('upd', String(Date.now()));
+				location.replace(u.toString());
+				return;
+			  }
+			} catch { /* backend still down */ }
+
+			// backoff up to 2s
+			const ms = Math.min(250 + attempt * 250, 2000);
+
+			// after 60s, do a last-ditch cache-busted reload anyway
+			if (Date.now() - t0 > 60000) {
+			  location.replace(location.origin + location.pathname + '?upd=' + Date.now());
+			  return;
+			}
+
+			setTimeout(tick, ms);
+		  };
+
+		  setTimeout(tick, delayMs);
+		}
+
+
+		es.onopen = () => {
+		  // one-shot: after update, force same-tab cache-busted reload
+		  const fr = sessionStorage.getItem('AF_forceReload');
+		  if (fr) {
+			sessionStorage.removeItem('AF_forceReload');
+			try {
+			  const u = new URL(location.href);
+			  u.searchParams.set('upd', String(Date.now()));
+			  location.replace(u.toString());
+			} catch {
+			  location.replace('/?upd=' + Date.now());
+			}
+			return;
+		  }
+		};
+
+
+		es.onmessage = ev => {
+		  const data = norm(ev && ev.data);
+		  if (!data) return;
+
+		  // If the backend tells us it's restarting for update, wait until it comes back, then reload.
+		  if (data.includes('UPDATE_RESTART')) {
+			try { sessionStorage.setItem('AF_forceReload', String(Date.now())); } catch {}
+			waitForBackendThenReload(350);
+		  }
+
+		  data.split('\n').forEach(add);
+		};
+
+
+		es.onerror = () => {
+		  try { es.close(); } catch {}
+		  waitForBackendThenReload(500);
+		};
+
+	  }catch{}
+	}
+
+
+  
+  function flashGearOrange() {
+	  const gear = document.getElementById('btnGear');
+	  if (!gear) return;
+	  gear.classList.add('auto-login-flash');
+	}
+
+
+  (async()=>{ await tail(); stream(); })();
+})();
+</script>
+
+<script>
+/* -------------------- HOSTS wiring (p50 RTT + active/limit bar) -------------------- */
+(function(){
+  const cards = Array.from(document.querySelectorAll('.hosts .hostcard'));
+  if (!cards.length) return;
+
+  function badge(meta, text, cls){
+    const span = document.createElement('span');
+    span.className = 'pill ' + cls; span.textContent = text; meta.appendChild(span);
+  }
+  function clsForStatus(s){
+	  const x = String(s||'').toLowerCase();
+	  if (x.includes('temp')) return 'cool';   // renamed from 'ban' → 'cool'
+	  if (x.includes('flaky') || x.includes('warn')) return 'flaky';
+	  if (x.includes('slow')) return 'slow';
+	  if (x.includes('ok') || x.includes('healthy') || x.includes('good')) return 'ok';
+	  return '';
+	}
+
+
+  function paint(card, h){
+    const nameEl = card.querySelector('.name');
+    const rttEl  = card.querySelector('.rtt');
+    const spark  = card.querySelector('.spark > span');
+    const meta   = card.querySelector('.hostmeta');
+    if (!nameEl || !rttEl || !spark || !meta) return;
+
+    Array.from(meta.querySelectorAll('.pill')).forEach(n=>n.remove());
+
+    const name = h.name || h.host || '—';
+    const p50  = Number(h.p50_ms ?? h.p50 ?? h.rtt_ms ?? h.ms ?? h.rtt ?? 0);
+    const st   = String(h.state || h.status || (h.cooldown ? 'temp_ban' : '')).toLowerCase();
+
+    nameEl.textContent = name;
+
+    if (st.includes('temp_ban') || st.includes('temp-ban')){
+	  badge(meta,'STABILIZING','cool');
+	  rttEl.textContent = '—';
+	  spark.style.width = '0%';
+	  try { spark.title = 'Active: 0/0'; } catch {}
+	  try { track.title = 'STABILIZING • Active 0/0'; } catch {}
+	  return;
+	}
+
+
+
+    if (h.pinned) badge(meta,'PINNED','pin');
+
+    const cls = clsForStatus(st || (p50<=0 ? '' : (p50<=300?'ok':(p50<=600?'slow':'flaky'))));
+    if (cls) badge(meta, cls==='ok'?'OK':cls.toUpperCase(), cls);
+
+    rttEl.textContent = (p50>0 ? (p50|0)+'ms' : '—');
+
+    // triple-tip metrics
+	const track = card.querySelector('.spark');
+	const inner = card.querySelector('.spark > span');
+	if (inner) inner.style.width = '100%';
+
+	// WHITE = RTT heat (cap 800ms → 100%)
+	const rttMs    = Number(h.p50_ms ?? h.p50 ?? h.rtt_ms ?? h.ms ?? h.rtt ?? 0);
+	const whitePct = Math.max(0, Math.min(100, rttMs > 0 ? (rttMs / 800) * 100 : 0));
+
+	// CYAN = reliability (use provided %, else derive from status)
+	let succPct = Number(h.succPct ?? h.successPct ?? h.okRate ?? NaN);
+	if (!Number.isFinite(succPct)) {
+	  const st = String(h.state || h.status || '').toLowerCase();
+	  succPct = st.includes('ok') ? 92 : st.includes('slow') ? 65 : st.includes('flaky') ? 35 : 0;
+	}
+
+	  // LIME = throughput share (fallback to active/limit)
+	  const active = Math.max(0, Number(h.active ?? h.inflight ?? h.conns ?? 0));
+	  const limit  = Math.max(1, Number(h.limit  ?? h.cap     ?? h.cap_v ?? 4));
+
+	  let sharePct = Number(h.sharePct ?? h.bytesSharePct ?? h.loadPct ?? NaN);
+	  if (!Number.isFinite(sharePct)) sharePct = Math.max(0, Math.min(100, (active / limit) * 100));
+
+	  // ALWAYS keep the little tooltip correct (it was getting stuck at "Active: 0/0")
+	  try { spark.title = `Active: ${active}/${limit}`; } catch {}
+
+	  if (track){
+		track.style.setProperty('--pct-white', whitePct.toFixed(2) + '%');
+		track.style.setProperty('--pct-cyan',  Math.max(0, Math.min(100, succPct)).toFixed(2) + '%');
+		track.style.setProperty('--pct-lime',  Math.max(0, Math.min(100, sharePct)).toFixed(2) + '%');
+		track.title = `RTT ${rttMs|0} ms • OK ${Math.round(succPct)}% • Share ${Math.round(sharePct)}% • Active ${active}/${limit}`;
+	  }
+
+
+  }
+  function paintIdle(card){
+    const nameEl = card.querySelector('.name');
+    const rttEl  = card.querySelector('.rtt');
+    const spark  = card.querySelector('.spark > span');
+    const meta   = card.querySelector('.hostmeta');
+    if (!nameEl || !rttEl || !spark || !meta) return;
+    Array.from(meta.querySelectorAll('.pill')).forEach(n=>n.remove());
+    nameEl.textContent = '—'; rttEl.textContent = '—'; spark.style.width = '0%'; spark.title = '';
+  }
+
+  async function refreshHosts(){
+    try{
+      let s = null;
+      // prefer /api/hosts if present; else /api/status
+      try{
+        const rHosts = await fetch('/api/hosts', { cache:'no-store' });
+        if (rHosts.ok) s = await rHosts.json();
+      }catch{}
+      if (!s){
+        const r = await fetch('/api/status',{cache:'no-store'});
+        if (!r.ok) return;
+        s = await r.json();
+      }
+      const src = (s.hosts || s.linkHosts || s.linkHealth || s.link_health || s);
+      const list = Array.isArray(src) ? src : [];
+      for (let i=0;i<cards.length;i++){
+        const h = list[i];
+        if (h) paint(cards[i], h);
+        else   paintIdle(cards[i]);
+      }
+    }catch{}
+  }
+
+  refreshHosts();
+  if (window.__hostsTimer) clearInterval(window.__hostsTimer);
+  window.__hostsTimer = setInterval(refreshHosts, 2500);
+})();
+</script>
+
+<!-- Inline preview viewer (moved inside <body>) + RECENT click-to-preview -->
+<div id="pvMask"  style="position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;z-index:10000;"></div>
+<div id="pvModal" style="position:fixed;left:50%;top:50%;transform:translate(-50%, -50%);
+  width:min(92vw,1200px);height:min(90vh,800px);background:#0b121b;border:1px solid #22303a;
+  border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.6);display:none;z-index:10001;overflow:hidden;">
+  <div style="display:flex;align-items:center;justify-content:space-between;
+    padding:10px 12px;border-bottom:1px solid #22303a;background:rgba(255,255,255,.04);">
+    <div id="pvTitle" style="font:700 12px Orbitron,ui-sans-serif;letter-spacing:.3px;text-transform:uppercase;">Preview</div>
+    <button id="pvClose" class="btn" style="height:32px;padding:0 10px;border-radius:10px;">Close</button>
+  </div>
+  <iframe id="pvFrame" style="border:0;width:100%;height:calc(100% - 44px);background:#000"></iframe>
+</div>
+<script>
+/* -------------------- RECENT (click to preview) -------------------- */
+
+(function(){
+  const tbody   = document.querySelector('.panel.recent .table tbody');
+  const mask    = document.getElementById('pvMask');
+  const modal   = document.getElementById('pvModal');
+  const frame   = document.getElementById('pvFrame');
+  const titleEl = document.getElementById('pvTitle');
+  const btnX    = document.getElementById('pvClose');
+  if(!tbody || !mask || !modal || !frame || !titleEl || !btnX) return;
+
+  function show(url, name){
+    if(!url) return;
+    titleEl.textContent = name ? `Preview — ${name}` : 'Preview';
+    mask.style.display = modal.style.display = 'block';
+    frame.src = 'about:blank';
+    setTimeout(()=>{
+      const bust = (url.indexOf('?')>-1 ? '&' : '?') + 'v=' + Date.now();
+      frame.src = url + bust;
+    }, 0);
+  }
+
+  function hide(){
+    modal.style.display = mask.style.display = 'none';
+    frame.src = 'about:blank';
+    frame.removeAttribute('srcdoc'); // FF unblock
+    frame.src = 'about:blank';
+  }
+  mask.addEventListener('click', hide);
+  btnX .addEventListener('click', hide);
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') hide(); });
+
+  // Resolve any row target to a URL the iframe can load
+  async function resolvePreviewUrl(href, name){
+    const u = String(href || '');
+
+    // 1) Real URLs are fine
+    if (/^https?:\/\//i.test(u) || u.startsWith('/')) return u;
+
+    // 2) Local filesystem path? → stream via server
+    //    Handles: C:\..., D:/..., \\server\share\..., file:///C:/...
+    if (/^[a-zA-Z]:[\\/]/.test(u) || /^\\\\/.test(u) || /^file:/i.test(u)) {
+      const cleaned = u.replace(/^file:\/\//i, '');
+      return '/api/preview-by-path?path=' + encodeURIComponent(cleaned);
+    }
+
+    // 3) Fallback: stream by basename from the server recent ring
+    const safe = (name || '').split(/[\\/]/).pop();
+    return '/api/preview?name=' + encodeURIComponent(safe);
+  }
+
+  // Delegation: rows stay clickable after refreshes
+  tbody.addEventListener('click', async (e) => {
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    e.preventDefault(); e.stopPropagation();
+
+    const raw  = tr.getAttribute('data-href') || '';
+    const name = tr.getAttribute('data-name') || (tr.textContent || '').trim();
+    const href = raw ? decodeURIComponent(raw) : '';
+    try {
+      const url = await resolvePreviewUrl(href, name);
+      if (url) show(url, name || href);
+    } catch {}
+  });
+
+  // Fill the Recent table (keeps full file path in data-href)
+  async function refreshRecent(){
+    try{
+      const r = await fetch('/api/recent?limit=12', {cache:'no-store'});
+      if(!r.ok) return;
+      const j = await r.json();
+      const items = Array.isArray(j) ? j : (j.items || j.list || j.recent || j.completed || j.paths || []);
+      const rows = items.slice(0,3).map(it=>{
+        const name = (it && (it.name || it.title || it.file || it.path)) ||
+                     (typeof it==='string' ? it : '') || '—';
+        const url  = (it && (it.url || it.href || it.preview || it.link)) || '';
+        const file = (it && (it.path || it.file)) || '';
+        const href = encodeURIComponent(url || file || ''); // may be a local path
+        const safe = String(name).split(/[\\/]/).pop();
+        return `<tr data-href="${href}" data-name="${safe}"><td>${safe || '—'}</td></tr>`;
+      }).join('');
+      tbody.innerHTML = rows || '<tr><td>—</td></tr>';
+    }catch{}
+  }
+
+  refreshRecent();
+  if (window.__recentTimer) clearInterval(window.__recentTimer);
+  window.__recentTimer = setInterval(refreshRecent, 3000);
+})();
+</script>
+
+<script>
+/* -------------------- GEAR MENU: mode + NV/VID workers -------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const btnGear   = document.getElementById('btnGear');
+  const menu      = document.getElementById('gearMenu');
+  const selMode   = document.getElementById('selMode');
+  const nvInput   = document.getElementById('nvWorkers');
+  const vidInput  = document.getElementById('vidWorkers');
+  const btnApply  = document.getElementById('gearApply');
+  const LOCK_CLS = 'gear-locked';
+
+  function lockInput(input, locked){
+    if (!input) return;
+    if (locked){
+      input.disabled = true;
+      input.classList.add(LOCK_CLS);
+    } else {
+      input.disabled = false;
+      input.classList.remove(LOCK_CLS);
+    }
+  }
+
+  function applyModeLocks(){
+    const mode = (selMode.value || '').toLowerCase();
+
+    if (mode === 'img'){
+      // Images only → no video workers
+      vidInput.value = '0';
+      lockInput(vidInput, true);
+      lockInput(nvInput, false);
+    } else if (mode === 'vid'){
+      // Videos only → no non-video workers
+      nvInput.value = '0';
+      lockInput(nvInput, true);
+      lockInput(vidInput, false);
+    } else {
+      // All → both tuners free
+      lockInput(nvInput, false);
+      lockInput(vidInput, false);
+    }
+
+    // remember for the throughput bar
+    window.__webUiMode = mode;
+  }
+
+  if (!btnGear || !menu) return;
+
+  function openMenu(){
+    menu.style.display = 'block';
+    loadConfig();
+  }
+  function closeMenu(){
+    menu.style.display = 'none';
+  }
+
+  btnGear.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (menu.style.display === 'block') closeMenu();
+    else openMenu();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!menu.contains(e.target) && e.target !== btnGear) closeMenu();
+  });
+
+    // Load current config into the menu – for now just sync the locks
+  async function loadConfig(){
+    applyModeLocks();
+  }
+
+  // Push mode + worker tuners to backend
+  async function applyConfig(){
+    const mode = (selMode.value || 'all').toLowerCase();
+    const nv   = Number(nvInput.value || 0);
+    const vid  = Number(vidInput.value || 0);
+
+    try{
+      await fetch('/api/config', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          mode,
+          nvWorkers: nv,
+          vidWorkers: vid
+        })
+      });
+    }catch(e){
+      console.warn('applyConfig failed', e);
+    }
+  }
+  // debounce tuner changes so we only POST once after user stops clicking
+  let tunerApplyTimer = null;
+  function scheduleTunerApply(){
+    if (tunerApplyTimer) clearTimeout(tunerApplyTimer);
+    tunerApplyTimer = setTimeout(() => {
+      applyConfig();
+    }, 250); // tweak delay if you want
+  }
+
+  // Mode change → lock inputs AND auto-apply to backend
+	  selMode.addEventListener('change', () => {
+		applyModeLocks();
+		applyConfig();
+	  });
+
+    // Worker tuners → debounce auto-apply
+	  nvInput.addEventListener('change', scheduleTunerApply);
+	  vidInput.addEventListener('change', scheduleTunerApply);
+
+
+	  vidInput.addEventListener('change', () => {
+		applyConfig();
+	  });
+
+
+  // Turn the old Apply button into a HELP button
+	  if (btnApply){
+		btnApply.textContent = '?';
+
+    const helpText = [
+	  'Modes:',
+	  '• All — Downloads images + videos using both worker pools.',
+	  '• Images only — Downloads images only. (VID forced to 0)',
+	  '• Videos only — Downloads videos only. (NV forced to 0)',
+	  '',
+	  'Tuners:',
+	  '• NV workers — Parallel slots for images and other non-video files.',
+	  '• VID workers — Parallel slots dedicated to videos.',
+	  '',
+	  'Login:',
+	  '• If the gear is blinking, you are not logged in.',
+	  '• Use the Login fields in Settings to create a session.',
+	  '',
+	  'Tips:',
+	  '• Going too high can reduce speed (timeouts/retries).',
+	  '• Keep NV 1–2 higher than VID since images complete faster (ex: NV 3 / VID 2).',
+	  '• Host quality + server load can swing speeds a lot.',
+	  '',
+	  'Suggested defaults:',
+	  '• All — NV 4, VID 2',
+	  '• Images only — NV 6, VID 0',
+	  '• Videos only — NV 0, VID 2'
+	].join('\n');
+
+
+
+
+
+    btnApply.addEventListener('click', (e) => {
+      e.stopPropagation();
+      alert(helpText);
+    });
+  }
+});
+</script>
+
+
+
+
+<script>
+/* -------------------- THROUGHPUT (Front-end Timer Fix) -------------------- */
+(function(){
+  const panel = document.querySelector('.panel.throughput');
+  if (!panel) return;
+
+    const el = {
+	  runtime: panel.querySelector('.kv-runtime'),
+	  now:     panel.querySelector('.kv-now'),
+	  avg:     panel.querySelector('.kv-avg'),
+	  queue:   panel.querySelector('.kv-queue'),
+	  posts:   panel.querySelector('.kv-posts') || null,
+	  drain:   panel.querySelector('.kv-drain') || null,
+	  track:   panel.querySelector('.bar i')
+	};
+
+
+
+  let __peakMBps = 0;
+
+  // Helper: Seconds -> HH:MM:SS
+  function hms(sec){
+    sec = Math.max(0, Number(sec) || 0);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    return [
+      h.toString().padStart(2,'0'),
+      m.toString().padStart(2,'0'),
+      s.toString().padStart(2,'0')
+    ].join(':');
+  }
+
+  function unwrap(s){
+    if (!s) return {};
+    if (s.throughput) return s.throughput; 
+    return s;
+  }
+
+  function extract(s){
+    const t = unwrap(s) || {};
+
+    // 1. Calculate Runtime: Prioritize Client-Side Timers
+    //    (This ensures immediate response to Start/Stop/[DONE])
+    let effectiveTime = '00:00:00';
+
+    // If we have a frozen end time (set by [DONE] log detection)
+    if (window.__rtEndMs > 0 && window.__rtStartMs > 0) {
+      const diffSec = (window.__rtEndMs - window.__rtStartMs) / 1000;
+      effectiveTime = hms(diffSec);
+    }
+    // Else if we have a start time (Running)
+    else if (window.__rtStartMs > 0) {
+      const diffSec = (Date.now() - window.__rtStartMs) / 1000;
+      effectiveTime = hms(diffSec);
+    }
+    // Fallback: If page was refreshed, use Backend string
+    else {
+      const rtRoot = (s && typeof s.runtime === 'string' && s.runtime.includes(':')) ? s.runtime.trim() : '';
+      const rtSub  = (typeof t.runtime === 'string' && t.runtime.includes(':')) ? String(t.runtime).trim() : '';
+      const rtSec  = Number(t.runtimeSec || t.uptime || 0);
+      effectiveTime = rtRoot || rtSub || hms(rtSec);
+    }
+
+    const runtimeText = 'Runtime ' + effectiveTime;
+
+    // 2. Standard metrics
+    const nowMBps = Number(
+      t.speedNowMBps || t.nowMBps || t.speedRolling || t.speed_now || t.speedNow || 0
+    );
+    const avgMBps = Number(
+      t.speedAvgMBps || t.avgMBps  || t.speedAvg || 0
+    );
+    
+    const q = Number(
+      (s && (s.queue ?? s.queueCount)) ??
+      t.queue ?? t.queueSize ?? t.pending ?? 0
+    );
+    const queueText = 'Queue ' + (q | 0);
+    const stRaw  = String(s && (s.state || s.status) || '').toLowerCase();
+    const doneish  = /idle|done|finished|complete|completed/.test(stRaw);
+    const stopping = !!window.__AF_DRAINING || /stopping|draining/.test(stRaw);
+
+    // 3. Twin tips logic (Pink/Cyan bars)
+    __peakMBps = Math.max(__peakMBps * 0.98, nowMBps, avgMBps, 1);
+
+    const pctPink = __peakMBps > 0
+      ? Math.min(100, Math.max(0, (nowMBps / __peakMBps) * 100))
+      : 0;
+
+    const pctOverall = __peakMBps > 0
+      ? Math.min(100, Math.max(0, (avgMBps / __peakMBps) * 100))
+      : 0;
+
+    // 4. Posts & Limits
+        const postsDone  = Number(s?.completed ?? 0);
+    const postsTotal = Number(s?.total ?? 0);
+
+    const nvWorkers  = Number(t?.nvWorkers ?? s?.nvWorkers ?? 0);
+    const vidWorkers = Number(t?.vidWorkers ?? s?.vidWorkers ?? 0);
+
+    const nvActive  = Number(s && (s.nvActive  ?? s.nv_active  ?? s.activeNv  ?? nvWorkers  ?? 0));
+    const vidActive = Number(s && (s.vidActive ?? s.vid_active ?? s.activeVid ?? vidWorkers ?? 0));
+    const active    = nvActive + vidActive;
+    const draining  = stopping && !doneish;
+
+    // Respect WebUI mode for display
+    const mode = (window.__webUiMode || '').toLowerCase();
+
+    let nvShown  = nvWorkers;
+    let vidShown = vidWorkers;
+
+    if (mode === 'img')      vidShown = 0;
+    else if (mode === 'vid') nvShown = 0;
+    // --- Lightweight knobs for CURRENT DOWNLOAD spectrum ---
+    try {
+      // numeric runtime in seconds (same as the text timer above)
+      let rtSec = 0;
+      if (window.__rtEndMs > 0 && window.__rtStartMs > 0) {
+        rtSec = (window.__rtEndMs - window.__rtStartMs) / 1000;
+      } else if (window.__rtStartMs > 0) {
+        rtSec = (Date.now() - window.__rtStartMs) / 1000;
+      } else {
+        rtSec = Number(t.runtimeSec || t.uptime || 0);
+      }
+      window.__AF_RUNTIME_SEC = Math.max(0, rtSec);
+
+      // simple “load” metric for the spectrum
+      const queueWeight = Math.min(queue, 8);        // cap huge queues
+      const loadRaw     = active + queueWeight * 0.25;
+      const speedNow    = Number(t.speedNowMBps || t.nowMBps || t.speedNow || 0);
+
+      window.__AF_LOAD = {
+        loadRaw,
+        active,
+        queue: queueWeight,
+        speedNow
+      };
+    } catch {}
+
+        return {
+      runtimeText,
+      nowMBps,
+      avgMBps,
+      queueText,
+      pctOverall,
+      pctPink,
+      postsDone,
+      postsTotal,
+      nvWorkers:  nvShown,
+      vidWorkers: vidShown,
+      draining
+    };
+
+  }
+
+  function paint(d){
+    if (!d || !el.track) return;
+    if (el.runtime) el.runtime.textContent = d.runtimeText;
+    if (el.now)     el.now.textContent     = 'Now '  + (d.nowMBps || 0).toFixed(1) + ' MB/s';
+    if (el.avg)     el.avg.textContent     = 'Avg '  + (d.avgMBps || 0).toFixed(1) + ' MB/s';
+    if (el.queue)   el.queue.textContent   = d.queueText || 'Queue 0';
+    if (el.posts){
+      const cur   = Number(d.postsDone  || 0);
+      const total = Number(d.postsTotal || 0);
+      el.posts.textContent = 'Posts: ' + cur + ' / ' + total;
+    }
+
+        const nvEl = document.querySelector('.kv-nv');
+    const vvEl = document.querySelector('.kv-vv');
+    if (nvEl) nvEl.textContent = 'NV '  + (d.nvWorkers  ?? 0);
+    if (vvEl) vvEl.textContent = 'VID ' + (d.vidWorkers ?? 0);
+
+        if (el.drain) {
+      if (d.draining) {
+        el.drain.textContent = '[Draining…]';
+        el.drain.classList.add('pulse');
+      } else {
+        el.drain.textContent = '';
+        el.drain.classList.remove('pulse');
+      }
+    }
+
+
+    const track = el.track;
+    track.style.setProperty('--pct-cyan',  (d.pctOverall || 0).toFixed(2) + '%');
+    track.style.setProperty('--pct-pink',  (d.pctPink    || 0).toFixed(2) + '%');
+
+  }
+
+	  async function poll(){
+	  try{
+		const r = await fetch('/api/status', { cache: 'no-store' });
+		if (!r.ok) return;
+		const s = await r.json();
+
+		window.__AF_PW_READY = !!s.pwReady;
+
+		const pw = !!s.pwInstalling;
+		window.__AF_PW_INSTALLING = pw;
+
+		const gear = document.getElementById('btnGear');
+		if (gear) {
+		  const need = !!s.needLogin;
+		  gear.classList.toggle('need-login', need);
+		  gear.classList.toggle('logged-in', !need);
+		  gear.classList.toggle('auto-login-flash', pw);
+		}
+
+		paint(extract(s));   // <-- MUST be here (s is in scope)
+
+	  }catch(e){
+		// swallow
+	  }
+	}
+
+	poll();
+	if (window.__throughputTimer) clearInterval(window.__throughputTimer);
+	window.__throughputTimer = setInterval(poll, 1000);
+
+	})();
+</script>
+<script>
+	(function(){
+	  // per-tab ID (just for future if you ever care, not required server-side)
+	  const tabId = window.__AF_TAB_ID || (window.__AF_TAB_ID =
+		(crypto.randomUUID ? crypto.randomUUID()
+						   : (Date.now().toString(36) + Math.random().toString(36).slice(2))));
+
+	  async function ping(){
+		try{
+		  await fetch('/api/ping', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ tabId })
+		  });
+		}catch{}
+	  }
+
+	  // first ping as soon as the page loads
+	  ping();
+
+	  // then ping every 5 seconds while the tab is alive
+	  if (window.__webUiPingTimer) clearInterval(window.__webUiPingTimer);
+	  window.__webUiPingTimer = setInterval(ping, 5000);
+	})();
+</script>
+
+<script>
+	document.addEventListener('DOMContentLoaded', () => {
+	  const btnReset  = document.getElementById('btnReset');
+	  const btnRun    = document.getElementById('btnRun');
+	  const btnUpdate = document.getElementById('btnUpdate');
+	  const btnSave = document.getElementById('btnSave');
+	  if (btnSave) {
+		btnSave.addEventListener('click', async (e) => {
+		  e.preventDefault(); e.stopImmediatePropagation();
+		  try { await fetch('/api/pick-folder', { method: 'POST' }); } catch {}
+		}, true);
+	  }
+
+
+	  const isRunning = () => ((btnRun?.dataset?.state || 'stopped').toLowerCase() === 'running');
+
+	  // ---- UPDATE
+	  if (btnUpdate) {
+		btnUpdate.addEventListener('click', async () => {
+		  // block update while running
+		  if (isRunning()) {
+			btnUpdate.classList.add('lit');
+			setTimeout(() => btnUpdate.classList.remove('lit'), 250);
+			return;
+		  }
+
+		  // block update while already updating
+		  try {
+			const rs = await fetch('/api/update/status', { cache: 'no-store' });
+			if (rs.ok) {
+			  const s = await rs.json();
+			  if (s?.busy) {
+				btnUpdate.classList.add('lit');
+				setTimeout(() => btnUpdate.classList.remove('lit'), 250);
+				return;
+			  }
+			}
+		  } catch { /* ignore */ }
+
+		  const curVer = (document.querySelector('.brand-logo')?.getAttribute('data-ver') || '').trim();
+
+		  let info;
+		  try {
+			const r = await fetch('/api/update/check?cur=' + encodeURIComponent(curVer), { cache: 'no-store' });
+			if (!r.ok) throw new Error('check failed');
+			info = await r.json();
+		  } catch {
+			alert('Update check failed.');
+			return;
+		  }
+
+		  if (!info || !info.hasUpdate || !info.assetUrl) {
+			alert('No update available.');
+			return;
+		  }
+
+		  if (!confirm(`Update available: ${info.latest}\n\nInstall now? (will restart)`)) return;
+
+		  btnUpdate.disabled = true;
+
+		  try {
+		  const r2 = await fetch('/api/update/apply', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ assetUrl: info.assetUrl })
+		  });
+
+		  if (!r2.ok) {
+			btnUpdate.disabled = false;
+			alert('Update failed.');
+			return;
+		  }
+
+		  sessionStorage.setItem('AF_forceReload', String(Date.now()));
+		} catch {
+		  btnUpdate.disabled = false;
+		  alert('Update failed.');
+		  return;
+		}
+
+
+		  // Poll status until the app exits/restarts
+		  const t0 = Date.now();
+		  const timer = setInterval(async () => {
+			if (Date.now() - t0 > 60000) { clearInterval(timer); return; }
+			try {
+			  const rs = await fetch('/api/update/status', { cache: 'no-store' });
+			  if (!rs.ok) return;
+			  const s = await rs.json();
+			  btnUpdate.title = s?.message || 'Updating…';
+			} catch {}
+		  }, 500);
+		  // When the backend restarts, SSE will drop and our stream() onerror will reload.
+		  // As a fallback, also force a same-tab reload with cache-bust after a short delay.
+		  setTimeout(() => {
+		  try {
+			const url = new URL(window.location.href);
+			url.searchParams.set('upd', Date.now().toString());
+
+			clearInterval(timer); // OPTIONAL goes HERE
+
+			window.location.replace(url.toString());
+		  } catch {
+			clearInterval(timer); // OPTIONAL can also go HERE
+			window.location.href = '/?upd=' + Date.now();
+		  }
+		}, 1200);
+
+
+		});
+	  }
+
+	  // ---- RESET
+	  if (btnReset) {
+		btnReset.addEventListener('click', async () => {
+		  // no reload while running
+		  if (isRunning()) {
+			btnReset.classList.add('lit');
+			setTimeout(() => btnReset.classList.remove('lit'), 250);
+			return;
+		  }
+
+		  try { await fetch('/api/log/clear', { method: 'POST' }); } catch {}
+		  try { document.querySelector('.panel.recent .table tbody')?.replaceChildren(); } catch {}
+		  try { await fetch('/api/recent/clear', { method: 'POST' }); } catch {}
+
+		  const url = new URL(window.location.href);
+		  url.searchParams.set('upd', Date.now().toString()); // cache-bust
+		  window.location.replace(url.toString());            // SAME TAB (no new tab)
+
+		});
+	  }
+	});
+</script>
+
+
+<script>
+/* ---------- Warn before closing tab/browser while a run is active ---------- */
+(function(){
+  const EXIT_MSG = "Closing this tab or browser will exit AstroFetch. Continue?";
+
+  window.addEventListener('beforeunload', function (e) {
+    try {
+      const btn = document.getElementById('btnRun');
+      if (!btn) return;
+
+      const st = (btn.dataset && btn.dataset.state) || 'stopped';
+      if (st !== 'running') return;  // no warning unless we're actively running
+
+      // Try to detect a pure reload and skip warning in that case
+      let isReload = false;
+      try {
+        const navEntries = performance.getEntriesByType
+          ? performance.getEntriesByType('navigation')
+          : null;
+        if (navEntries && navEntries.length && navEntries[0].type === 'reload') {
+          isReload = true;
+        } else if (performance && performance.navigation && performance.navigation.type === 1) {
+          // legacy API: type === 1 → reload
+          isReload = true;
+        }
+      } catch { }
+
+      if (isReload) return;
+
+      e.preventDefault();
+      e.returnValue = EXIT_MSG; // required for most browsers to show the dialog
+      return EXIT_MSG;
+    } catch {
+      // fail open (no warning) rather than block tab close on error
+    }
+  });
+})();
+</script>
+	<script>
+	(function () {
+	    const canvas = document.getElementById('neuralStrip');
+	  if (!canvas) return;
+
+	  const ctx = canvas.getContext('2d');
+	  let width = 0, height = 0;
+
+	  const BAR_COUNT = 72;
+	  const points  = new Float32Array(BAR_COUNT);
+	  const phases  = new Float32Array(BAR_COUNT);
+	  const speeds  = new Float32Array(BAR_COUNT);
+		const savePulse = new Float32Array(BAR_COUNT);
+
+
+	  // init seeds
+	  for (let i = 0; i < BAR_COUNT; i++) {
+		phases[i] = Math.random() * Math.PI * 2;
+		speeds[i] = 0.6 + Math.random() * 0.8;  // slight per-bar variation
+	  }
+
+	  function resize() {
+		const rect = canvas.getBoundingClientRect();
+		const dpr = window.devicePixelRatio || 1;
+
+		width  = rect.width  * dpr;
+		height = rect.height * dpr;
+
+		canvas.width  = width;
+		canvas.height = height;
+
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+	  }
+
+	  resize();
+	  window.addEventListener('resize', resize);
+
+	  let lastTime = performance.now();
+
+	  function frame(now) {
+	  const dt = Math.min(0.05, (now - lastTime) / 1000 || 0.016);
+	  lastTime = now;
+
+	  // ---- per-bar save pulses (driven by __AF_PULSE_SAVE) ----
+	  for (let i = 0; i < BAR_COUNT; i++) {
+		savePulse[i] = Math.max(0, savePulse[i] - dt * 1.6);
+	  }
+
+	  // Treat intensity as "load": 0 = idle, 1 = max busy
+	  const raw  = (window.__AF_NEURAL_INTENSITY ?? 0);
+	  const load = Math.max(0, Math.min(1, raw));
+	  const busy = load;
+	  const idle = 1 - load;
+
+
+
+		// fade: more persistent & glassy when idle, more wiped when busy
+		const fade = 0.30 + busy * 0.25;
+		ctx.fillStyle = `rgba(5,6,12,${fade.toFixed(2)})`;
+		ctx.fillRect(0, 0, width, height);
+
+		const barGap   = 2;
+		const barWidth = Math.max(2, (width / BAR_COUNT) - barGap);
+
+		for (let i = 0; i < BAR_COUNT; i++) {
+		  // phase speed: ramps up when busy
+		  phases[i] += speeds[i] * (0.10 + busy * 1.25) * dt * 1.25;
+
+		  // base waveform 0–1
+		  let wave = (Math.sin(phases[i]) + 1) * 0.5;
+
+		  // jitter only when busy so it "pops" under real load
+		  if (busy > 0.60) {
+			wave += (Math.random() * 0.25 - 0.125) * busy;
+		  }
+		  wave = Math.max(0, Math.min(1, wave));
+
+		  
+			// min height: a bit lower, overall ~25% shorter
+			const minHNorm = 0.02 + idle * 0.03;
+			const maxHNorm = 0.50;
+
+
+			// on saves, briefly push the whole field taller
+			const ampBoost = 1 + (savePulse[i] || 0) * 0.55;
+
+			const hNorm = minHNorm + (maxHNorm - minHNorm) * wave * ampBoost;
+			const barH  = Math.min(1, hNorm) * height;
+
+
+
+		  const x = i * (barWidth + barGap);
+		  const y = height - barH;
+
+		  // gradient: subtle cyan mid, orange body, lime/white tip
+		  const g = ctx.createLinearGradient(0, y, 0, height);
+		  const cyanAlpha   = 0.10 + busy * 0.12; // keep cyan subtle
+		  const orangeAlpha = 0.22 + busy * 0.40;
+		  const limeAlpha   = 0.40 + busy * 0.55;
+		  const whiteAlpha  = 0.14 + busy * 0.30;
+
+		  g.addColorStop(0.00, 'rgba(5, 8, 14, 0.0)');
+		  g.addColorStop(0.30, `rgba(111,230,255,${cyanAlpha.toFixed(3)})`);   // cyan band
+		  g.addColorStop(0.65, `rgba(255,180,  0,${orangeAlpha.toFixed(3)})`); // orange core
+		  g.addColorStop(0.92, `rgba(207,255,  4,${limeAlpha.toFixed(3)})`);   // lime tip (shorter)
+		  g.addColorStop(0.98, `rgba(255,255,255,${whiteAlpha.toFixed(3)})`);  // tighter white cap
+
+
+		  ctx.fillStyle = g;
+		  ctx.fillRect(x, y, barWidth, barH);
+			// bright white tip that pops on saves
+		const sp = savePulse[i] || 0;
+		if (sp > 0.05) {
+		  const tipH = Math.max(1, barH * (0.025 + 0.0625 * sp));
+		  ctx.fillStyle = `rgba(255,255,255,${0.35 + 0.45 * sp})`;
+		  ctx.fillRect(x, y, barWidth, tipH);
+		}
+
+
+		        // occasional white spark near the tip when really busy
+      if (busy > 0.45 && Math.random() < busy * 0.02) {
+        const sparkY = y + barH * 0.08;
+        ctx.fillStyle = `rgba(255,255,255,${0.15 + busy * 0.25})`;
+        ctx.fillRect(x, sparkY, barWidth, 2);
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+
+	  // called from log tailer on each "[OK] ... saved"
+	  window.__AF_PULSE_SAVE = function () {
+		for (let k = 0; k < 4; k++) {
+		  const idx = (Math.random() * BAR_COUNT) | 0;
+		  savePulse[idx] = 1.0;
+		}
+	  };
+})();
+</script>
+
+
+
+
+
+
+<a class="coffee-link"
+   href="https://buymeacoffee.com/airwalk"
+   target="_blank"
+   rel="noopener noreferrer">
+  Buy me a coffee
+</a>
+
+
+
+</body>
+</html>
