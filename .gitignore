@@ -1,21 +1,50 @@
+# =========================
 # Build output
+# =========================
 bin/
 obj/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+AnyCPU/
+artifacts/
+publish/
+dist/
 
-# Visual Studio
+# dotnet publish can also land here depending on tooling
+out/
+
+# =========================
+# Visual Studio / tooling
+# =========================
 .vs/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
+*.cache
+*.pdb
+*.mdb
 
-# Your local configs / state
+# =========================
+# Your local configs / runtime-downloaded state
+# =========================
 ui.ini
 easylist.txt
 filters.txt
 
-# Playwright browsers cache
+# =========================
+# Playwright / test output
+# =========================
 pw-browsers/
+playwright-report/
+test-results/
 
+# =========================
 # Logs / update artifacts
+# =========================
 *.log
 runlog*.txt
 vsout*.txt
@@ -24,5 +53,35 @@ vsout*.txt
 _UPDATE_MODE_ENTERED.txt
 _wuh_update_spawn.txt
 
-# Notepad++ backups
+# =========================
+# Editor backups
+# =========================
 nppBackup/
+*.bak
+*.tmp
+
+# =========================
+# OS junk / crash dumps
+# =========================
+Thumbs.db
+Desktop.ini
+*.dmp
+
+# =========================
+# Accidental release bundles
+# =========================
+*.zip
+*.7z
+*.rar
+
+# =========================
+# Safety: secrets / signing (ignore even if you don't use them)
+# =========================
+.env
+.env.*
+*.snk
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
