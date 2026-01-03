@@ -5,6 +5,9 @@
 Astryx is a Windows-native downloader focused on **sustained throughput, reliability, and visibility** rather than burst scraping.  
 It combines a high-performance backend with a real-time local Web UI.
 
+<img width="1913" height="920" alt="530176039-bfdcd326-8fa6-46e1-b3aa-8858261d396f" src="https://github.com/user-attachments/assets/77197507-fdbe-404f-b67c-49f38dccaaf6" />
+Real-time local Web UI showing throughput, host health, and download state.
+
 ## Project Status
 
 Astryx is a personal / hobby project developed by an amateur programmer and released publicly as an early v0.x build; the project is actively developed and may change as the author continues learning and refining the implementation.
