@@ -10,7 +10,7 @@ Real-time local Web UI showing throughput, host health, and download state.
 
 ## Project Status
 
-Astryx is a personal / hobby project developed by an amateur programmer and released publicly as an early v0.x build; the project is actively developed and may change as the author continues learning and refining the implementation.
+Astryx is a personal / hobby project developed by an independent developer and released publicly as an early v0.x build; the project is actively developed and may change as the author continues learning and refining the implementation.
 
 The codebase evolved organically to solve real-world reliability and performance
 issues rather than to showcase clean architecture or idiomatic patterns.
