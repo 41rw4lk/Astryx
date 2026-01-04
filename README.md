@@ -8,19 +8,7 @@ It combines a high-performance backend with a real-time local Web UI.
 <img width="1913" height="920" alt="530176039-bfdcd326-8fa6-46e1-b3aa-8858261d396f" src="https://github.com/user-attachments/assets/77197507-fdbe-404f-b67c-49f38dccaaf6" />
 Real-time local Web UI showing throughput, host health, and download state.
 
-## Project Status
-
-Astryx is a personal / hobby project developed by an independent developer and released publicly as an early v0.x build; the project is actively developed and may change as the author continues learning and refining the implementation.
-
-The codebase evolved organically to solve real-world reliability and performance
-issues rather than to showcase clean architecture or idiomatic patterns.
-
-Some areas are intentionally monolithic or redundant in favor of:
-- debuggability
-- predictable behavior
-- sustained throughput
-
-Refactoring and cleanup are ongoing but not a prerequisite for use.
+---
 
 ![GitHub release](https://img.shields.io/github/v/release/41rw4lk/Astryx?label=release)
 ![License](https://img.shields.io/github/license/41rw4lk/Astryx)
@@ -28,6 +16,20 @@ Refactoring and cleanup are ongoing but not a prerequisite for use.
 ![Forks](https://img.shields.io/github/forks/41rw4lk/Astryx)
 ![Downloads](https://img.shields.io/github/downloads/41rw4lk/Astryx/total)
 ![Last commit](https://img.shields.io/github/last-commit/41rw4lk/Astryx)
+
+## Project Status
+
+Astryx is an independently developed project released publicly as an early v0.x build.
+The project is actively developed and may evolve as the implementation continues to be refined.
+
+The codebase evolved organically to address real-world reliability and performance concerns, rather than to prioritize showcase-level architecture or strictly idiomatic patterns.
+
+Some areas are intentionally monolithic or redundant in favor of:
+- debuggability
+- predictable behavior
+- sustained throughput
+
+Refactoring and cleanup or are going, but not required for effective use.
 
 ---
 
