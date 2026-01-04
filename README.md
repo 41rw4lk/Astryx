@@ -22,6 +22,12 @@ Some areas are intentionally monolithic or redundant in favor of:
 
 Refactoring and cleanup are ongoing but not a prerequisite for use.
 
+![GitHub release](https://img.shields.io/github/v/release/41rw4lk/Astryx?label=release)
+![License](https://img.shields.io/github/license/41rw4lk/Astryx)
+![Stars](https://img.shields.io/github/stars/41rw4lk/Astryx)
+![Forks](https://img.shields.io/github/forks/41rw4lk/Astryx)
+![Downloads](https://img.shields.io/github/downloads/41rw4lk/Astryx/total)
+![Last commit](https://img.shields.io/github/last-commit/41rw4lk/Astryx)
 
 ---
 
