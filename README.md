@@ -17,7 +17,7 @@ Real-time local Web UI showing throughput, host health, and download state.
 ![Downloads](https://img.shields.io/github/downloads/41rw4lk/Astryx/total)
 ![Last commit](https://img.shields.io/github/last-commit/41rw4lk/Astryx)
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-support-%23FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/YOURNAME)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-support-%23FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/airwalk)
 
 ## Project Status
 
