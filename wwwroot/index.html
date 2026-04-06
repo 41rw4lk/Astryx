@@ -32,7 +32,6 @@
 	
 
 
-
 	/* glass — mimic Gindex panels */
 	.glass{
 	  position: relative;
@@ -456,6 +455,35 @@
 	/* --- lock the app to one page, let panels scroll internally --- */
 	html, body { height:100%; overflow:hidden; }
 
+	/* dark scrollbars */
+	* {
+	  scrollbar-color: #2a2f36 #000;
+	  scrollbar-width: thin;
+	}
+
+	*::-webkit-scrollbar {
+	  width: 12px;
+	  height: 12px;
+	}
+
+	*::-webkit-scrollbar-track {
+	  background: #000;
+	}
+
+	*::-webkit-scrollbar-thumb {
+	  background: #2a2f36;
+	  border-radius: 10px;
+	  border: 2px solid #000;
+	}
+
+	*::-webkit-scrollbar-thumb:hover {
+	  background: #3a424d;
+	}
+
+	*::-webkit-scrollbar-corner {
+	  background: #000;
+	}
+	
 	/* safety: avoid min-height growth that forces page scroll */
 	main, .grid-lower, .logs .inner { min-height:0; }
 
@@ -773,7 +801,7 @@
   <div class="side-band right"></div>
 
   <div class="wrapper">
-	<div class="brand-logo" data-ver="v0.3.1">
+	<div class="brand-logo" data-ver="v0.3.2">
 	  ASTRYX<span class="dash">☆</span>
 	</div>
 
@@ -2009,46 +2037,218 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="pvMask"  style="position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;z-index:10000;"></div>
 <div id="pvModal" style="position:fixed;left:50%;top:50%;transform:translate(-50%, -50%);
   width:min(92vw,1200px);height:min(90vh,800px);background:#0b121b;border:1px solid #22303a;
-  border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.6);display:none;z-index:10001;overflow:hidden;">
+  border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,6);display:none;z-index:10001;overflow:hidden;">
   <div style="display:flex;align-items:center;justify-content:space-between;
-    padding:10px 12px;border-bottom:1px solid #22303a;background:rgba(255,255,255,.04);">
+    padding:10px 12px;border-bottom:1px solid #22303a;background:#000">
     <div id="pvTitle" style="font:700 12px Orbitron,ui-sans-serif;letter-spacing:.3px;text-transform:uppercase;">Preview</div>
-    <button id="pvClose" class="btn" style="height:32px;padding:0 10px;border-radius:10px;">Close</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="pvZoomOut" class="btn" style="height:32px;padding:0 10px;border-radius:10px;">−</button>
+      <button id="pvReset" class="btn" style="height:32px;padding:0 10px;border-radius:10px;">Fit</button>
+      <button id="pvZoomIn" class="btn" style="height:32px;padding:0 10px;border-radius:10px;">+</button>
+      <button id="pvClose" class="btn" style="height:32px;padding:0 10px;border-radius:10px;">Close</button>
+    </div>
   </div>
-  <iframe id="pvFrame" style="border:0;width:100%;height:calc(100% - 44px);background:#000"></iframe>
+
+  <div id="pvViewport" style="position:relative;width:100%;height:calc(100% - 53px);background:#000;overflow:hidden;cursor:default;">
+    <img id="pvImg" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);transform-origin:center center;max-width:none;max-height:none;display:none;user-select:none;-webkit-user-drag:none;cursor:grab;" />
+    <video id="pvVideo" controls playsinline style="position:absolute;inset:0;width:100%;height:100%;display:none;background:#000;object-fit:contain;"></video>
+  </div>
 </div>
 <script>
 /* -------------------- RECENT (click to preview) -------------------- */
 
 (function(){
-  const tbody   = document.querySelector('.panel.recent .table tbody');
-  const mask    = document.getElementById('pvMask');
-  const modal   = document.getElementById('pvModal');
-  const frame   = document.getElementById('pvFrame');
-  const titleEl = document.getElementById('pvTitle');
-  const btnX    = document.getElementById('pvClose');
-  if(!tbody || !mask || !modal || !frame || !titleEl || !btnX) return;
+  const tbody    = document.querySelector('.panel.recent .table tbody');
+	const mask     = document.getElementById('pvMask');
+	const modal    = document.getElementById('pvModal');
+	const viewport = document.getElementById('pvViewport');
+	const img      = document.getElementById('pvImg');
+	const video    = document.getElementById('pvVideo');
+	const titleEl  = document.getElementById('pvTitle');
+	const btnX     = document.getElementById('pvClose');
+	const btnIn    = document.getElementById('pvZoomIn');
+	const btnOut   = document.getElementById('pvZoomOut');
+	const btnReset = document.getElementById('pvReset');
+	if(!tbody || !mask || !modal || !viewport || !img || !video || !titleEl || !btnX || !btnIn || !btnOut || !btnReset) return;
 
-  function show(url, name){
-    if(!url) return;
-    titleEl.textContent = name ? `Preview — ${name}` : 'Preview';
-    mask.style.display = modal.style.display = 'block';
-    frame.src = 'about:blank';
-    setTimeout(()=>{
-      const bust = (url.indexOf('?')>-1 ? '&' : '?') + 'v=' + Date.now();
-      frame.src = url + bust;
-    }, 0);
-  }
+	const pv = {
+	  kind: null,
+	  url: '',
+	  scale: 1,
+	  minScale: 1,
+	  maxScale: 8,
+	  panX: 0,
+	  panY: 0,
+	  dragging: false,
+	  startX: 0,
+	  startY: 0,
+	  moved: false
+	};
 
-  function hide(){
-    modal.style.display = mask.style.display = 'none';
-    frame.src = 'about:blank';
-    frame.removeAttribute('srcdoc'); // FF unblock
-    frame.src = 'about:blank';
-  }
+	function isVideoUrl(url){
+	  return /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(url || ''));
+	}
+
+	function resetImageFit(){
+	  const vw = Math.max(1, viewport.clientWidth);
+	  const vh = Math.max(1, viewport.clientHeight);
+	  const iw = Math.max(1, img.naturalWidth);
+	  const ih = Math.max(1, img.naturalHeight);
+
+	  const fitScale = Math.min(vw / iw, vh / ih, 1);
+
+	  pv.minScale = fitScale;
+	  pv.scale = fitScale;
+	  pv.panX = 0;
+	  pv.panY = 0;
+	  applyImageTransform();
+	}
+
+	function applyImageTransform(){
+	  img.style.transform = `translate(calc(-50% + ${pv.panX}px), calc(-50% + ${pv.panY}px)) scale(${pv.scale})`;
+	  img.style.cursor = pv.scale > pv.minScale ? 'grab' : 'default';
+	}
+
+	function show(url, name){
+	  if(!url) return;
+
+	  const bust = url + ((url.indexOf('?') > -1 ? '&' : '?') + 'v=' + Date.now());
+	  const kind = isVideoUrl(url) ? 'video' : 'image';
+
+	  pv.kind = kind;
+	  pv.url = bust;
+	  pv.dragging = false;
+	  pv.moved = false;
+
+	  titleEl.textContent = name ? `Preview — ${name}` : 'Preview';
+	  mask.style.display = modal.style.display = 'block';
+
+	  img.style.display = 'none';
+	  video.style.display = 'none';
+	  img.removeAttribute('src');
+	  video.pause();
+	  video.removeAttribute('src');
+	  video.load();
+
+	  if (kind === 'video') {
+		video.style.display = 'block';
+		video.muted = false;
+		video.autoplay = true;
+		video.src = bust;
+		video.play().catch(() => {});
+		btnIn.disabled = true;
+		btnOut.disabled = true;
+		btnReset.disabled = true;
+		return;
+	  }
+
+	  btnIn.disabled = false;
+	  btnOut.disabled = false;
+	  btnReset.disabled = false;
+
+	  img.onload = () => {
+		resetImageFit();
+	  };
+	  img.style.display = 'block';
+	  img.src = bust;
+	}
+
+	function hide(){
+	  modal.style.display = mask.style.display = 'none';
+
+	  pv.kind = null;
+	  pv.url = '';
+	  pv.dragging = false;
+	  pv.moved = false;
+	  pv.scale = 1;
+	  pv.panX = 0;
+	  pv.panY = 0;
+
+	  img.style.display = 'none';
+	  video.style.display = 'none';
+	  img.removeAttribute('src');
+	  video.pause();
+	  video.removeAttribute('src');
+	  video.load();
+	}
   mask.addEventListener('click', hide);
   btnX .addEventListener('click', hide);
   window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') hide(); });
+  btnIn.addEventListener('click', () => {
+	  if (pv.kind !== 'image') return;
+	  pv.scale = Math.min(pv.maxScale, +(pv.scale * 1.2).toFixed(4));
+	  applyImageTransform();
+	});
+
+	btnOut.addEventListener('click', () => {
+	  if (pv.kind !== 'image') return;
+	  pv.scale = Math.max(pv.minScale, +(pv.scale / 1.2).toFixed(4));
+		if (pv.scale <= pv.minScale) {
+		  pv.scale = pv.minScale;
+		  pv.panX = 0;
+		  pv.panY = 0;
+		}
+	  applyImageTransform();
+	});
+
+	btnReset.addEventListener('click', () => {
+	  if (pv.kind !== 'image') return;
+	  resetImageFit();
+	});
+
+	viewport.addEventListener('wheel', (e) => {
+	  if (pv.kind !== 'image') return;
+	  e.preventDefault();
+
+	  const rect = viewport.getBoundingClientRect();
+	  const cx = e.clientX - rect.left - rect.width / 2;
+	  const cy = e.clientY - rect.top - rect.height / 2;
+
+	  const oldScale = pv.scale;
+	  const factor = e.deltaY < 0 ? 1.12 : (1 / 1.12);
+	  const nextScale = Math.max(pv.minScale, Math.min(pv.maxScale, +(pv.scale * factor).toFixed(4)));
+
+	  if (nextScale === oldScale) return;
+
+	  const worldX = (cx - pv.panX) / oldScale;
+	  const worldY = (cy - pv.panY) / oldScale;
+
+	  pv.scale = nextScale;
+	  pv.panX = cx - worldX * nextScale;
+	  pv.panY = cy - worldY * nextScale;
+
+	  if (pv.scale <= pv.minScale) {
+		pv.scale = pv.minScale;
+		pv.panX = 0;
+		pv.panY = 0;
+	  }
+
+	  applyImageTransform();
+	}, { passive:false });
+
+	img.addEventListener('mousedown', (e) => {
+	  if (pv.kind !== 'image' || pv.scale <= pv.minScale) return;
+	  e.preventDefault();
+	  pv.dragging = true;
+	  pv.moved = false;
+	  pv.startX = e.clientX - pv.panX;
+	  pv.startY = e.clientY - pv.panY;
+	  img.style.cursor = 'grabbing';
+	});
+
+	window.addEventListener('mousemove', (e) => {
+	  if (!pv.dragging || pv.kind !== 'image') return;
+	  pv.panX = e.clientX - pv.startX;
+	  pv.panY = e.clientY - pv.startY;
+	  pv.moved = true;
+	  applyImageTransform();
+	});
+
+	window.addEventListener('mouseup', () => {
+	  if (!pv.dragging) return;
+	  pv.dragging = false;
+	  applyImageTransform();
+	});
 
   // Resolve any row target to a URL the iframe can load
   async function resolvePreviewUrl(href, name){
